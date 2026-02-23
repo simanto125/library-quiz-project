@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Timed Quiz System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #eef2f3; padding: 20px; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .setup-box { text-align: center; padding: 40px; }
+        select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; width: 200px; margin-bottom: 20px; }
+        .timer-box { position: sticky; top: 10px; background: #e74c3c; color: white; padding: 10px 20px; border-radius: 30px; display: inline-block; font-weight: bold; font-size: 20px; float: right; }
+        .question-box { margin-bottom: 25px; padding: 20px; border-radius: 10px; background: #f9f9f9; border-left: 6px solid #3498db; }
+        .options label { display: block; background: #fff; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; cursor: pointer; transition: 0.3s; }
+        .options label:hover { background: #ecf0f1; border-color: #3498db; }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .btn-start { background: #3498db; color: white; }
+        .btn-submit { background: #27ae60; color: white; margin-top: 20px; }
+        .back-btn { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; font-weight: bold; }
+        #quiz-content { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="/dashboard" class="back-btn">⬅ Back to Dashboard</a>
+
+    <!-- কুইজ সেটআপ পেজ -->
+    <div id="setup-box" class="setup-box">
+        <h1>🎯 Quiz Setup</h1>
+        <p>Select how many questions you want to answer:</p>
+        <select id="mcqCount">
+            <option value="5">5 Questions</option>
+            <option value="10">10 Questions</option>
+            <option value="15">15 Questions</option>
+            <option value="20">20 Questions</option>
+        </select>
+        <button class="btn btn-start" onclick="startQuiz()">🚀 Start Quiz Now</button>
+    </div>
+
+    <!-- কুইজ এরিয়া (এখানে প্রশ্ন ও টাইমার থাকবে) -->
+    <div id="quiz-content">
+        <div class="timer-box">⏱️ Time: <span id="timeLeft">00:00</span></div>
+        <h2 id="quizTitle">Answering Questions...</h2>
+        <hr>
+        <div id="quiz-area"></div>
+        <button class="btn btn-submit" onclick="submitQuiz()">Submit Answers</button>
+    </div>
+
+    <!-- রেজাল্ট এরিয়া -->
+    <div id="result-box" style="display:none; text-align:center;">
+        <h1 style="color:#27ae60;">Quiz Finished! 🎉</h1>
+        <h2 id="finalScore"></h2>
+        <div id="details" style="text-align:left; margin-top:20px;"></div>
+        <button class="btn btn-start" onclick="window.location.reload()">Try Another Quiz</button>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "/";
+
+    let questions = [];
+    let timer;
+    let totalSeconds;
+
+    async function startQuiz() {
+        const count = document.getElementById("mcqCount").value;
+
+        // ১. সার্ভার থেকে প্রশ্ন নিয়ে আসা
+        const res = await fetch(`/quiz/start?limit=${count}`, {
+            headers: { "Authorization": "Bearer " + token }
+        });
+        const data = await res.json();
+
+        if (!data.questions || data.questions.length === 0) {
+            alert("No questions in Database! Ask Admin to add some.");
+            return;
+        }
+
+        questions = data.questions;
+
+        // ২. টাইমার সেট করা (প্রতি প্রশ্ন ৬০ সেকেন্ড)
+        totalSeconds = questions.length * 60;
+        startTimer();
+
+        // ৩. UI পরিবর্তন
+        document.getElementById("setup-box").style.display = "none";
+        document.getElementById("quiz-content").style.display = "block";
+
+        const area = document.getElementById("quiz-area");
+        area.innerHTML = "";
+
+        questions.forEach((q, i) => {
+            let opts = "";
+            q.options.forEach(opt => {
+                opts += `<label><input type="radio" name="q_${q.id}" value="${opt}"> ${opt}</label>`;
+            });
+            area.innerHTML += `
+                <div class="question-box">
+                    <h3>Q${i+1}: ${q.question}</h3>
+                    <div class="options">${opts}</div>
+                </div>
+            `;
+        });
+    }
+
+    function startTimer() {
+        timer = setInterval(() => {
+            if (totalSeconds <= 0) {
+                clearInterval(timer);
+                alert("Time is UP! Submitting your answers automatically.");
+                submitQuiz(); // সময় শেষ হলে অটো সাবমিট
+            } else {
+                totalSeconds--;
+                let min = Math.floor(totalSeconds / 60);
+                let sec = totalSeconds % 60;
+                document.getElementById("timeLeft").innerText =
+                    (min < 10 ? "0"+min : min) + ":" + (sec < 10 ? "0"+sec : sec);
+            }
+        }, 1000);
+    }
+
+    async function submitQuiz() {
+        clearInterval(timer); // টাইমার বন্ধ করে দেওয়া
+
+        let userAnswers = [];
+        questions.forEach(q => {
+            const selected = document.querySelector(`input[name="q_${q.id}"]:checked`);
+            userAnswers.push({
+                "question_id": q.id,
+                "selected_answer": selected ? selected.value : "Not Answered"
+            });
+        });
+
+        const res = await fetch("/quiz/submit", {
+            method: "POST",
+            headers: {
+                "Authorization": "Bearer " + token,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(userAnswers)
+        });
+
+        const data = await res.json();
+
+        // রেজাল্ট দেখানো
+        document.getElementById("quiz-content").style.display = "none";
+        document.getElementById("result-box").style.display = "block";
+        document.getElementById("finalScore").innerText = `Your Score: ${data.total_score} / ${data.out_of}`;
+
+        let details = "";
+        data.detailed_results.forEach(r => {
+            details += `
+                <div style="padding:10px; border-bottom:1px solid #ddd;">
+                    <b>${r.question}</b><br>
+                    Ans: ${r.your_answer} | Correct: <span style="color:green">${r.correct_answer}</span>
+                </div>
+            `;
+        });
+        document.getElementById("details").innerHTML = details;
+    }
+</script>
+</body>
+</html>

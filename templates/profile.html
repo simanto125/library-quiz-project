@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Profile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #eef2f3; padding: 40px; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .header { text-align: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 20px; margin-bottom: 20px; }
+        .user-info h2 { color: #2c3e50; margin: 0; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background: #34495e; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+
+        .btn-return { background: #c0392b; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .btn-return:hover { background: #a93226; }
+        .back-btn { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; font-weight: bold; font-size: 18px; }
+
+        /* 🔴 Red Alert Animation */
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+        .red-alert { color: red; font-weight: bold; animation: blink 1s infinite; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <a href="/dashboard" class="back-btn">⬅ Back to Dashboard</a>
+
+        <div class="header">
+            <div class="user-info">
+                <h2 id="userName">User Profile</h2>
+                <p id="userEmail">Loading...</p>
+            </div>
+        </div>
+
+        <h3>📚 My Borrowed Books</h3>
+        <p>Return books on time to avoid fines!</p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Book Title</th>
+                    <th>Issue Date</th>
+                    <th>Return Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="borrowList">
+                <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const token = localStorage.getItem("token");
+        if (!token) window.location.href = "/";
+
+        async function loadProfile() {
+            const res = await fetch("/users/me", { headers: { "Authorization": "Bearer " + token }});
+            const data = await res.json();
+            document.getElementById("userEmail").innerText = "Email: " + data.email;
+        }
+
+        async function loadBorrowedBooks() {
+            const res = await fetch("/users/borrowed-books", { headers: { "Authorization": "Bearer " + token }});
+            const books = await res.json();
+            const list = document.getElementById("borrowList");
+            list.innerHTML = "";
+
+            if (books.length === 0) {
+                list.innerHTML = "<tr><td colspan='4' style='text-align:center;'>No books borrowed yet.</td></tr>";
+                return;
+            }
+
+            let today = new Date();
+            today.setHours(0,0,0,0);
+
+            books.forEach(b => {
+                // Timezone fix
+                let returnDate = new Date(b.return_date + "T00:00:00");
+                let diffTime = returnDate.getTime() - today.getTime();
+                let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+                let dateStyle = "color:black;";
+                let alertIcon = "";
+
+                // 🔴 অ্যালার্ট লজিক
+                if (diffDays === 1 || diffDays === 0) {
+                    dateStyle = "color:red; font-weight:bold;";
+                    alertIcon = "<span class='red-alert'> 🔴 (Alert: " + diffDays + " day left)</span>";
+                } else if (diffDays < 0) {
+                    dateStyle = "color:darkred; font-weight:bold;";
+                    alertIcon = " ❌ (Overdue!)";
+                } else {
+                    alertIcon = ` <span style='color:green; font-size:12px;'>(${diffDays} days left)</span>`;
+                }
+
+                list.innerHTML += `
+                    <tr>
+                        <td><b>${b.book_title}</b></td>
+                        <td>${b.issue_date}</td>
+                        <td style="${dateStyle}">${b.return_date} ${alertIcon}</td>
+                        <td><button class="btn-return" onclick="returnBook('${b.isbn}')">Return Book</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function returnBook(isbn) {
+            if(!confirm("Are you sure you want to return this book?")) return;
+            const res = await fetch("/books/return/" + isbn, { method: "POST", headers: { "Authorization": "Bearer " + token }});
+            if(res.ok) { alert("Book Returned Successfully!"); loadBorrowedBooks(); }
+        }
+
+        loadProfile();
+        loadBorrowedBooks();
+    </script>
+</body>
+</html>

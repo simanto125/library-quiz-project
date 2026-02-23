@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Control Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #2c3e50; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 10px; }
+        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; font-weight: bold; color: #7f8c8d; }
+        .tab.active { color: #3498db; border-bottom: 3px solid #3498db; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        textarea { width: 100%; height: 80px; margin-top: 10px; }
+        .btn-action { background: #27ae60; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #34495e; color: white; }
+        .back-btn { display: inline-block; margin-bottom: 20px; font-weight: bold; text-decoration: none; color: #3498db; }
+
+        /* 🔴 Red Alert Animation */
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+        .red-alert { color: red; font-weight: bold; animation: blink 1s infinite; }
+        .overdue { color: darkred; font-weight: bold; }
+        .safe { color: green; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <a href="/dashboard" class="back-btn">⬅ Back to Dashboard</a>
+    <h1>🛠️ Admin Control Panel</h1>
+
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('booksTab', this)">Manage Books</div>
+        <div class="tab" onclick="showTab('quizTab', this)">Manage Quizzes</div>
+        <div class="tab" onclick="showTab('issuedTab', this)">Issued Books (Track)</div>
+    </div>
+
+    <div id="booksTab" class="tab-content active">
+        <textarea id="bookJson" placeholder='[{"title":"A","author":"B","isbn":"1","category":"C","total_copies":5,"available_copies":5}]'></textarea>
+        <button class="btn-action" onclick="bulkAddBooks()">Upload Books</button>
+        <table><thead><tr><th>Title</th><th>ISBN</th><th>Action</th></tr></thead><tbody id="bookList"></tbody></table>
+    </div>
+
+    <div id="quizTab" class="tab-content">
+        <textarea id="quizJson" placeholder='[{"question_text":"Q?","options":["A","B"],"correct_answer":"A","category":"GK"}]'></textarea>
+        <button class="btn-action" onclick="bulkAddQuiz()">Upload Questions</button>
+        <table><thead><tr><th>Question</th><th>Action</th></tr></thead><tbody id="quizList"></tbody></table>
+    </div>
+
+    <!-- 🚨 Track Students & Red Alert -->
+    <div id="issuedTab" class="tab-content">
+        <h2>📚 Books Borrowed by Students (<span id="issueCount">0</span>)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Student Email</th>
+                    <th>Book Title</th>
+                    <th>Issue Date</th>
+                    <th>Return Date</th>
+                    <th>Status / Alert</th>
+                </tr>
+            </thead>
+            <tbody id="issuedList"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem("token");
+    if (!token) window.location.href = "/";
+
+    async function checkAdmin() {
+        const res = await fetch("/users/me", { headers: { "Authorization": "Bearer " + token }});
+        const data = await res.json();
+        if (data.role !== "admin") { window.location.href = "/dashboard"; }
+        else { loadBooks(); loadQuiz(); loadIssuedBooks(); }
+    }
+
+    function showTab(tabId, el) {
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active'); el.classList.add('active');
+    }
+
+    async function loadBooks() {
+        const res = await fetch("/books"); const data = await res.json();
+        document.getElementById("bookList").innerHTML = data.map(b => `<tr><td>${b.title}</td><td>${b.isbn}</td><td><button onclick="deleteBook('${b.isbn}')">Del</button></td></tr>`).join('');
+    }
+    async function bulkAddBooks() {
+        await fetch("/books/bulk-add", { method: "POST", headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" }, body: document.getElementById("bookJson").value });
+        alert("Added!"); loadBooks();
+    }
+    async function deleteBook(isbn) { await fetch("/books/delete/" + isbn, { method: "DELETE", headers: { "Authorization": "Bearer " + token }}); loadBooks(); }
+
+    async function loadQuiz() {
+        const res = await fetch("/quiz/all"); const data = await res.json();
+        document.getElementById("quizList").innerHTML = data.map(q => `<tr><td>${q.question_text}</td><td><button onclick="deleteQuiz('${q._id}')">Del</button></td></tr>`).join('');
+    }
+    async function bulkAddQuiz() {
+        await fetch("/quiz/bulk-add", { method: "POST", headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" }, body: document.getElementById("quizJson").value });
+        alert("Added!"); loadQuiz();
+    }
+    async function deleteQuiz(id) { await fetch("/quiz/delete/" + id, { method: "DELETE", headers: { "Authorization": "Bearer " + token }}); loadQuiz(); }
+
+    // 🔥 Red Alert & Track System (Timezone Fixed)
+    async function loadIssuedBooks() {
+        const res = await fetch("/admin/issued-books", { headers: { "Authorization": "Bearer " + token }});
+        const data = await res.json();
+
+        document.getElementById("issueCount").innerText = data.length;
+        const list = document.getElementById("issuedList");
+        list.innerHTML = "";
+
+        let today = new Date();
+        today.setHours(0,0,0,0);
+
+        data.forEach(record => {
+            // "T00:00:00" যোগ করা হয়েছে যাতে টাইমজোনের সমস্যা না হয়
+            let returnDate = new Date(record.return_date + "T00:00:00");
+            let diffTime = returnDate.getTime() - today.getTime();
+            let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)); // সঠিক দিন হিসাব
+
+            let statusHtml = `<span class='safe'>Safe (${diffDays} days left)</span>`;
+
+            // 🚨 রেড অ্যালার্ট লজিক 🚨
+            if (diffDays === 1 || diffDays === 0) {
+                statusHtml = `<span class='red-alert'>🔴 Alert! Only ${diffDays} Day Left</span>`;
+            } else if (diffDays < 0) {
+                statusHtml = `<span class='overdue'>❌ Overdue! Fine Applicable</span>`;
+            }
+
+            // 👇 এই লাইনটা আগে কেটে গিয়েছিল, এখন ঠিক করা হয়েছে
+            list.innerHTML += `
+                <tr>
+                    <td><b>${record.user_email}</b></td>
+                    <td>${record.book_title}</td>
+                    <td>${record.issue_date}</td>
+                    <td style="font-weight:bold;">${record.return_date}</td>
+                    <td>${statusHtml}</td>
+                </tr>
+            `;
+        });
+    }
+
+    checkAdmin();
+</script>
+</body>
+</html>

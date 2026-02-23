@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 100vh; display: flex; justify_content: center; align-items: center; }
+        .reg-card { background: rgba(255, 255, 255, 0.95); padding: 40px; border-radius: 20px; box-shadow: 0 15px 25px rgba(0,0,0,0.2); width: 350px; text-align: center; }
+        h2 { color: #333; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; outline: none; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: linear-gradient(to right, #667eea, #764ba2); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4); }
+        .login-link { margin-top: 15px; display: block; color: #666; text-decoration: none; font-size: 14px; }
+        .login-link:hover { color: #764ba2; text-decoration: underline; }
+        #msg { margin-top: 10px; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+    <div class="reg-card">
+        <h2>📝 Create Account</h2>
+        <input type="text" id="name" placeholder="Full Name">
+        <input type="email" id="email" placeholder="Email Address">
+        <input type="password" id="password" placeholder="Password">
+
+        <button onclick="handleRegister()">Sign Up</button>
+
+        <p id="msg"></p>
+        <a href="/" class="login-link">Already have an account? Login here</a>
+    </div>
+
+    <script>
+        async function handleRegister() {
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const msg = document.getElementById('msg');
+
+            if(!name || !email || !password) {
+                msg.innerText = "Please fill all fields!";
+                msg.style.color = "red";
+                return;
+            }
+
+            msg.innerText = "Creating Account...";
+            msg.style.color = "blue";
+
+            try {
+                const res = await fetch("/register", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        "name": name,
+                        "email": email,
+                        "password": password,
+                        "role": "student" // ডিফল্টভাবে স্টুডেন্ট হবে
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    msg.innerText = "Success! Redirecting to Login...";
+                    msg.style.color = "green";
+                    setTimeout(() => { window.location.href = "/"; }, 1500);
+                } else {
+                    msg.innerText = "Error: " + data.detail;
+                    msg.style.color = "red";
+                }
+            } catch (error) {
+                msg.innerText = "Server Error!";
+                msg.style.color = "red";
+            }
+        }
+    </script>
+</body>
+</html>
