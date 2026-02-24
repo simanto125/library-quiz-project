@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Global Leaderboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        body { margin: 0; font-family: 'Poppins', sans-serif; background: #0f2027; background: linear-gradient(to right, #2c5364, #203a43, #0f2027); color: white; padding: 40px; display: flex; justify-content: center; }
+        .board-container { width: 100%; max-width: 800px; background: rgba(255,255,255,0.1); backdrop-filter: blur(10px); padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); }
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { font-size: 36px; margin: 0; color: #f1c40f; text-shadow: 0 0 10px rgba(241,196,15,0.5); }
+        .header p { color: #bdc3c7; font-size: 16px; margin-top: 5px; }
+
+        .rank-list { display: flex; flex-direction: column; gap: 15px; }
+        .rank-item { background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; padding: 20px 30px; border-radius: 15px; transition: 0.3s; border-left: 5px solid transparent; }
+        .rank-item:hover { transform: translateX(10px); background: rgba(255,255,255,0.15); }
+
+        .rank-info { display: flex; align-items: center; gap: 20px; }
+        .rank-num { font-size: 24px; font-weight: bold; width: 40px; text-align: center; }
+        .name { font-size: 20px; font-weight: 600; }
+        .date { font-size: 12px; color: #bdc3c7; display: block; }
+
+        .score-box { text-align: right; }
+        .score { font-size: 24px; font-weight: bold; color: #2ecc71; }
+        .percent { font-size: 14px; color: #ecf0f1; background: #27ae60; padding: 3px 10px; border-radius: 20px; }
+
+        /* Top 3 Medals */
+        .rank-1 { border-left-color: #f1c40f; background: linear-gradient(90deg, rgba(241,196,15,0.1), transparent); }
+        .rank-1 .rank-num { color: #f1c40f; text-shadow: 0 0 10px #f1c40f; }
+        .rank-2 { border-left-color: #bdc3c7; background: linear-gradient(90deg, rgba(189,195,199,0.1), transparent); }
+        .rank-2 .rank-num { color: #bdc3c7; text-shadow: 0 0 10px #bdc3c7; }
+        .rank-3 { border-left-color: #cd7f32; background: linear-gradient(90deg, rgba(205,127,50,0.1), transparent); }
+        .rank-3 .rank-num { color: #cd7f32; text-shadow: 0 0 10px #cd7f32; }
+
+        .back-btn { color: #3498db; text-decoration: none; font-weight: bold; font-size: 16px; margin-bottom: 20px; display: inline-block; transition: 0.3s; }
+        .back-btn:hover { color: #f1c40f; }
+    </style>
+</head>
+<body>
+
+    <div class="board-container">
+        <a href="/dashboard" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+
+        <div class="header">
+            <h1><i class="fas fa-trophy"></i> Quiz Leaderboard</h1>
+            <p>Top 10 highest scorers of all time</p>
+        </div>
+
+        <div class="rank-list" id="leaderboardData">
+            <p style="text-align:center;">Loading Top Scores...</p>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem("token");
+        if (!token) window.location.href = "/";
+
+        async function loadLeaderboard() {
+            try {
+                const res = await fetch("/quiz/leaderboard");
+                const data = await res.json();
+                const list = document.getElementById("leaderboardData");
+                list.innerHTML = "";
+
+                if (data.length === 0) {
+                    list.innerHTML = "<p style='text-align:center; color:#bdc3c7;'>No records found yet. Be the first to take a quiz!</p>";
+                    return;
+                }
+
+                data.forEach((r, index) => {
+                    let rankClass = "";
+                    let medalIcon = index + 1; // Default is number
+
+                    if (index === 0) { rankClass = "rank-1"; medalIcon = '<i class="fas fa-medal"></i>'; }
+                    else if (index === 1) { rankClass = "rank-2"; medalIcon = '<i class="fas fa-medal"></i>'; }
+                    else if (index === 2) { rankClass = "rank-3"; medalIcon = '<i class="fas fa-medal"></i>'; }
+
+                    list.innerHTML += `
+                        <div class="rank-item ${rankClass}">
+                            <div class="rank-info">
+                                <div class="rank-num">${medalIcon}</div>
+                                <div>
+                                    <span class="name">${r.student_name}</span>
+                                    <span class="date"><i class="far fa-calendar-alt"></i> ${r.date}</span>
+                                </div>
+                            </div>
+                            <div class="score-box">
+                                <div class="score">${r.score}/${r.out_of}</div>
+                                <div class="percent">${r.percentage.toFixed(0)}%</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+        loadLeaderboard();
+    </script>
+</body>
+</html>

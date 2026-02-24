@@ -2,57 +2,230 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Timed Quiz System</title>
+    <title>Quiz Arena - LMS Pro</title>
+    <!-- ফন্ট লোড -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <style>
         body { font-family: 'Poppins', sans-serif; background: #eef2f3; padding: 20px; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .setup-box { text-align: center; padding: 40px; }
-        select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; width: 200px; margin-bottom: 20px; }
-        .timer-box { position: sticky; top: 10px; background: #e74c3c; color: white; padding: 10px 20px; border-radius: 30px; display: inline-block; font-weight: bold; font-size: 20px; float: right; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .setup-box { text-align: center; }
+
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 8px; color: #34495e; }
+        select { padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; width: 100%; outline: none; cursor: pointer; transition: 0.3s; }
+        select:hover { border-color: #3498db; }
+
+        .timer-box { position: sticky; top: 10px; background: #e74c3c; color: white; padding: 10px 20px; border-radius: 30px; display: inline-block; font-weight: bold; font-size: 20px; float: right; box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3); z-index: 100; }
         .question-box { margin-bottom: 25px; padding: 20px; border-radius: 10px; background: #f9f9f9; border-left: 6px solid #3498db; }
         .options label { display: block; background: #fff; padding: 12px; margin-top: 10px; border-radius: 8px; border: 1px solid #ddd; cursor: pointer; transition: 0.3s; }
-        .options label:hover { background: #ecf0f1; border-color: #3498db; }
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; }
-        .btn-start { background: #3498db; color: white; }
-        .btn-submit { background: #27ae60; color: white; margin-top: 20px; }
+        .options label:hover { background: #e3f2fd; border-color: #3498db; }
+
+        .btn { padding: 15px 30px; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; color: white; }
+        .btn-start { background: linear-gradient(135deg, #3498db, #2980b9); width: 100%; max-width: 300px; } .btn-start:hover { transform: scale(1.05); }
+        .btn-submit { background: #27ae60; width: 100%; margin-top: 20px; } .btn-submit:hover { background: #219150; }
+        .btn-cert { background: #f39c12; margin-top: 15px; display: inline-block; text-decoration: none; color: white; } .btn-cert:hover { background: #d68910; }
+
         .back-btn { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; font-weight: bold; }
         #quiz-content { display: none; }
+
+        /* 🔥🔥🔥 CERTIFICATE DESIGN FIXED 🔥🔥🔥 */
+        #certificate-template {
+            display: none;
+            width: 900px;
+            height: 750px; /* হাইট বাড়ানো হয়েছে যাতে নিচে জায়গা থাকে */
+            padding: 40px;
+            background: #fff;
+            border: 20px solid #2c3e50;
+            text-align: center;
+            position: absolute;
+            top: -9999px; left: -9999px;
+            box-sizing: border-box;
+        }
+
+        .cert-inner {
+            border: 3px solid #d4af37;
+            outline: 5px solid #2c3e50;
+            outline-offset: 5px;
+            padding: 30px 40px;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cert-header { width: 100%; margin-top: 10px; }
+        .cert-logo { font-size: 50px; color: #2c3e50; margin-bottom: 10px; }
+        .cert-title { font-size: 45px; color: #d4af37; margin: 0; font-family: 'Cinzel', serif; letter-spacing: 2px; text-transform: uppercase; }
+        .cert-subtitle { font-size: 16px; color: #555; margin-top: 5px; letter-spacing: 3px; text-transform: uppercase; font-family: 'Poppins', sans-serif; }
+
+        .cert-name {
+            font-size: 45px; color: #1a2a6c; font-weight: 700;
+            border-bottom: 3px solid #d4af37; padding: 0 40px 10px 40px;
+            margin: 15px 0; font-family: 'Great Vibes', cursive;
+        }
+
+        .cert-body {
+            font-size: 18px; color: #444; width: 85%; line-height: 1.5;
+            margin: 0 auto; font-family: 'Poppins', sans-serif;
+        }
+
+        .cert-score {
+            font-size: 24px; color: #27ae60; font-weight: bold;
+            margin-top: 15px;
+            border: 2px solid #27ae60;
+            padding: 5px 20px;
+            border-radius: 50px;
+            display: inline-block;
+        }
+
+        /* 🔥 Footer Section 🔥 */
+        .cert-footer {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 15px;
+            padding: 0 30px;
+            box-sizing: border-box;
+        }
+
+        .cert-date-area, .signature-area {
+            text-align: center;
+            width: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .cert-signature {
+            font-family: 'Great Vibes', cursive;
+            font-size: 40px;
+            color: #2c3e50;
+            margin-bottom: 5px;
+            line-height: 1;
+        }
+
+        .cert-date-text {
+            font-weight: bold;
+            font-size: 18px;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .line {
+            border-top: 2px solid #333;
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        .label {
+            font-size: 12px;
+            color: #555;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <a href="/dashboard" class="back-btn">⬅ Back to Dashboard</a>
+    <a href="/dashboard" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
 
-    <!-- কুইজ সেটআপ পেজ -->
+    <!-- Setup Box -->
     <div id="setup-box" class="setup-box">
-        <h1>🎯 Quiz Setup</h1>
-        <p>Select how many questions you want to answer:</p>
-        <select id="mcqCount">
-            <option value="5">5 Questions</option>
-            <option value="10">10 Questions</option>
-            <option value="15">15 Questions</option>
-            <option value="20">20 Questions</option>
-        </select>
+        <h1><i class="fas fa-brain"></i> Quiz Arena</h1>
+        <p>Customize your challenge:</p>
+
+        <div class="input-group">
+            <label>Select Topic:</label>
+            <select id="topicSelect">
+                <option value="All">📚 All Topics (Random Mix)</option>
+                <option value="General">🌍 General Knowledge</option>
+                <option value="Science">🧬 Science</option>
+                <option value="Technology">💻 Technology</option>
+                <option value="History">📜 History</option>
+                <option value="Literature">📖 Literature</option>
+                <option value="Bangla">🇧🇩 Bangla</option>
+            </select>
+        </div>
+
+        <div class="input-group">
+            <label>Number of Questions:</label>
+            <select id="mcqCount">
+                <option value="5">5 Questions (Quick)</option>
+                <option value="10">10 Questions (Standard)</option>
+                <option value="15">15 Questions (Hard)</option>
+                <option value="20">20 Questions (Pro)</option>
+                <option value="random">🎲 Surprise Me! (Random)</option>
+            </select>
+        </div>
+
+        <br>
         <button class="btn btn-start" onclick="startQuiz()">🚀 Start Quiz Now</button>
     </div>
 
-    <!-- কুইজ এরিয়া (এখানে প্রশ্ন ও টাইমার থাকবে) -->
+    <!-- Quiz Area -->
     <div id="quiz-content">
-        <div class="timer-box">⏱️ Time: <span id="timeLeft">00:00</span></div>
-        <h2 id="quizTitle">Answering Questions...</h2>
+        <div class="timer-box"><i class="fas fa-stopwatch"></i> <span id="timeLeft">00:00</span></div>
+        <h2 style="color: #2c3e50;">Good Luck!</h2>
         <hr>
         <div id="quiz-area"></div>
         <button class="btn btn-submit" onclick="submitQuiz()">Submit Answers</button>
     </div>
 
-    <!-- রেজাল্ট এরিয়া -->
+    <!-- Result Area -->
     <div id="result-box" style="display:none; text-align:center;">
-        <h1 style="color:#27ae60;">Quiz Finished! 🎉</h1>
-        <h2 id="finalScore"></h2>
-        <div id="details" style="text-align:left; margin-top:20px;"></div>
-        <button class="btn btn-start" onclick="window.location.reload()">Try Another Quiz</button>
+        <h1 style="color:#27ae60;" id="resultTitle">Quiz Finished! 🎉</h1>
+        <h2 id="finalScore" style="font-size: 30px;"></h2>
+        <p id="msgDetails"></p>
+
+        <button id="certBtn" class="btn btn-cert" style="display:none;" onclick="downloadCertificate()"><i class="fas fa-award"></i> Download Certificate</button>
+
+        <br><br>
+        <div id="details" style="text-align:left; background: #f9f9f9; padding: 20px; border-radius: 10px;"></div>
+        <br>
+        <button class="btn btn-start" onclick="window.location.reload()">Take Another Quiz</button>
+    </div>
+</div>
+
+<!-- 🔥 Certificate Template 🔥 -->
+<div id="certificate-template">
+    <div class="cert-inner">
+        <div class="cert-header">
+            <div class="cert-logo"><i class="fas fa-book-reader"></i></div>
+            <h1 class="cert-title">Certificate of Achievement</h1>
+            <p class="cert-subtitle">This is to certify that</p>
+        </div>
+
+        <h2 class="cert-name" id="certUserName">Student Name</h2>
+
+        <p class="cert-body">Has successfully completed the <b>Advanced Library Assessment Test</b> demonstrating outstanding performance and dedication to learning.</p>
+
+        <div class="cert-score">Score: 100%</div>
+
+        <!-- 🔥 Footer (Date & Signature) 🔥 -->
+        <div class="cert-footer">
+            <div class="cert-date-area">
+                <span id="certDate" class="cert-date-text"></span>
+                <div class="line"></div>
+                <span class="label">Date</span>
+            </div>
+
+            <div class="signature-area">
+                <span class="cert-signature">Simanto CB</span>
+                <div class="line"></div>
+                <span class="label">System Administrator</span>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -63,28 +236,34 @@
     let questions = [];
     let timer;
     let totalSeconds;
+    let studentName = "Student";
+
+    fetch("/users/me", { headers: { "Authorization": "Bearer " + token }})
+        .then(res => res.json())
+        .then(data => { studentName = data.name; });
 
     async function startQuiz() {
-        const count = document.getElementById("mcqCount").value;
+        let count = document.getElementById("mcqCount").value;
+        let topic = document.getElementById("topicSelect").value;
 
-        // ১. সার্ভার থেকে প্রশ্ন নিয়ে আসা
-        const res = await fetch(`/quiz/start?limit=${count}`, {
+        if (count === "random") {
+            count = Math.floor(Math.random() * (15 - 5 + 1)) + 5;
+            alert(`🎲 Surprise! You have got ${count} random questions.`);
+        }
+
+        const res = await fetch(`/quiz/start?limit=${count}&category=${topic}`, {
             headers: { "Authorization": "Bearer " + token }
         });
+
         const data = await res.json();
 
         if (!data.questions || data.questions.length === 0) {
-            alert("No questions in Database! Ask Admin to add some.");
-            return;
+            alert("No questions found for this Topic! Try 'All Topics'."); return;
         }
 
         questions = data.questions;
-
-        // ২. টাইমার সেট করা (প্রতি প্রশ্ন ৬০ সেকেন্ড)
         totalSeconds = questions.length * 60;
-        startTimer();
 
-        // ৩. UI পরিবর্তন
         document.getElementById("setup-box").style.display = "none";
         document.getElementById("quiz-content").style.display = "block";
 
@@ -96,69 +275,78 @@
             q.options.forEach(opt => {
                 opts += `<label><input type="radio" name="q_${q.id}" value="${opt}"> ${opt}</label>`;
             });
-            area.innerHTML += `
-                <div class="question-box">
-                    <h3>Q${i+1}: ${q.question}</h3>
-                    <div class="options">${opts}</div>
-                </div>
-            `;
+            area.innerHTML += `<div class="question-box"><h3>Q${i+1}: ${q.question}</h3><div class="options">${opts}</div></div>`;
         });
+
+        startTimer();
     }
 
     function startTimer() {
         timer = setInterval(() => {
             if (totalSeconds <= 0) {
                 clearInterval(timer);
-                alert("Time is UP! Submitting your answers automatically.");
-                submitQuiz(); // সময় শেষ হলে অটো সাবমিট
+                alert("Time is UP! Submitting automatically.");
+                submitQuiz();
             } else {
                 totalSeconds--;
                 let min = Math.floor(totalSeconds / 60);
                 let sec = totalSeconds % 60;
-                document.getElementById("timeLeft").innerText =
-                    (min < 10 ? "0"+min : min) + ":" + (sec < 10 ? "0"+sec : sec);
+                document.getElementById("timeLeft").innerText = (min<10?"0"+min:min) + ":" + (sec<10?"0"+sec:sec);
             }
         }, 1000);
     }
 
     async function submitQuiz() {
-        clearInterval(timer); // টাইমার বন্ধ করে দেওয়া
+        clearInterval(timer);
+        document.getElementById("quiz-content").style.display = "none";
 
-        let userAnswers = [];
-        questions.forEach(q => {
+        let userAnswers = questions.map(q => {
             const selected = document.querySelector(`input[name="q_${q.id}"]:checked`);
-            userAnswers.push({
-                "question_id": q.id,
-                "selected_answer": selected ? selected.value : "Not Answered"
-            });
+            return { "question_id": q.id, "selected_answer": selected ? selected.value : "Not Answered" };
         });
 
         const res = await fetch("/quiz/submit", {
             method: "POST",
-            headers: {
-                "Authorization": "Bearer " + token,
-                "Content-Type": "application/json"
-            },
+            headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
             body: JSON.stringify(userAnswers)
         });
 
         const data = await res.json();
 
-        // রেজাল্ট দেখানো
-        document.getElementById("quiz-content").style.display = "none";
         document.getElementById("result-box").style.display = "block";
-        document.getElementById("finalScore").innerText = `Your Score: ${data.total_score} / ${data.out_of}`;
+        document.getElementById("finalScore").innerText = `Your Score: ${data.total_score} / ${data.out_of} (${data.percentage.toFixed(0)}%)`;
 
-        let details = "";
+        if (data.percentage === 100) {
+            document.getElementById("msgDetails").innerHTML = "<b style='color:green; font-size:18px;'>🌟 Perfect Score! You earned a Certificate! 🌟</b>";
+            document.getElementById("certBtn").style.display = "inline-block";
+            document.getElementById("certUserName").innerText = studentName;
+            let today = new Date();
+            document.getElementById("certDate").innerText = today.toLocaleDateString();
+        } else {
+            document.getElementById("msgDetails").innerHTML = "<b style='color:red;'>You need 100% score to get a certificate. Try again!</b>";
+            document.getElementById("certBtn").style.display = "none";
+        }
+
+        let details = "<h3>Detailed Review:</h3>";
         data.detailed_results.forEach(r => {
-            details += `
-                <div style="padding:10px; border-bottom:1px solid #ddd;">
-                    <b>${r.question}</b><br>
-                    Ans: ${r.your_answer} | Correct: <span style="color:green">${r.correct_answer}</span>
-                </div>
-            `;
+            details += `<div style="padding:10px; border-bottom:1px solid #ccc;">
+                <b>${r.question}</b><br>
+                Your Ans: ${r.your_answer} | Correct: <b style="color:green">${r.correct_answer}</b>
+            </div>`;
         });
         document.getElementById("details").innerHTML = details;
+    }
+
+    function downloadCertificate() {
+        const cert = document.getElementById("certificate-template");
+        cert.style.display = "block";
+        html2canvas(cert, { scale: 2 }).then(canvas => {
+            const link = document.createElement("a");
+            link.download = `Certificate_${studentName}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            cert.style.display = "none";
+        });
     }
 </script>
 </body>

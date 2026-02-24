@@ -3,40 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Library Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>LMS Pro - Secure Login</title>
+    <!-- 🎨 Modern Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&family=Righteous&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <style>
+        /* 🌌 Animated Gradient Background */
         body {
-            margin: 0; padding: 0; font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh; display: flex; justify_content: center; align-items: center;
+            margin: 0;
+            padding: 0;
+            font-family: 'Poppins', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            overflow: hidden;
         }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 🧊 Glassmorphism Login Card */
         .login-card {
-            background: rgba(255, 255, 255, 0.9); padding: 40px; border-radius: 20px;
-            box-shadow: 0 15px 25px rgba(0,0,0,0.2); width: 350px; text-align: center;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 50px 40px;
+            border-radius: 20px;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.2);
+            width: 380px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            z-index: 10;
         }
+
+        /* 🎨 Title Style */
+        .title-text {
+            font-family: 'Righteous', cursive;
+            font-size: 42px;
+            margin: 0 0 5px 0;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
+        }
+        .sub-text {
+            color: #e0e0e0;
+            font-size: 15px;
+            margin-bottom: 35px;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        /* 🖋️ Input Fields */
+        .input-container {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .input-container i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #fff;
+            font-size: 18px;
+            opacity: 0.8;
+        }
+
         input {
-            width: 100%; padding: 10px; margin-bottom: 15px;
-            border: 1px solid #ddd; border-radius: 5px; outline: none;
+            width: 100%;
+            padding: 15px 15px 15px 45px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 30px;
+            outline: none;
+            box-sizing: border-box;
+            font-size: 16px;
+            color: #fff;
+            transition: 0.3s;
         }
+
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        input:focus {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        /* 🚀 Action Button */
         button {
-            width: 100%; padding: 12px; background: linear-gradient(to right, #667eea, #764ba2);
-            color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;
+            width: 100%;
+            padding: 15px;
+            background: #fff;
+            color: #2c3e50;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 800;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         }
-        button:hover { opacity: 0.9; }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            background: #f1c40f;
+            color: #fff;
+        }
+
+        /* 🔗 Links */
+        .register-link {
+            margin-top: 25px;
+            display: block;
+            font-size: 14px;
+            color: #ecf0f1;
+            text-decoration: none;
+            font-weight: 400;
+        }
+        .register-link span {
+            color: #fff;
+            font-weight: 600;
+            text-decoration: underline;
+            transition: 0.3s;
+        }
+        .register-link:hover span {
+            color: #f1c40f;
+        }
+
+        #msg { margin-top:15px; font-size:14px; font-weight:bold; color: #fff;}
+
+        /* ✨ Decorative Floating Circles */
+        .circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(5px);
+            z-index: 1;
+            animation: float 6s ease-in-out infinite;
+        }
+        .circle:nth-child(1) { width: 150px; height: 150px; top: -50px; left: -50px; animation-delay: 0s; }
+        .circle:nth-child(2) { width: 100px; height: 100px; bottom: -30px; right: -30px; animation-delay: 2s; }
+        .circle:nth-child(3) { width: 80px; height: 80px; top: 40%; right: -40px; animation-delay: 4s; }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
     </style>
 </head>
 <body>
+
+    <!-- Floating Background Elements -->
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+
     <div class="login-card">
-        <h2>📚 Library Login</h2>
-        <input type="email" id="email" placeholder="student@example.com">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="handleLogin()">Login</button>
-        <p id="msg" style="margin-top:15px; font-size:12px; color:#666;"></p>
-        <!-- এই লাইনটি যোগ করো -->
-<p style="margin-top: 15px; font-size: 14px;">
-    Don't have an account? <a href="/register-page" style="color: #667eea; text-decoration: none; font-weight: bold;">Register Here</a>
-</p>
+        <h1 class="title-text">LMS Pro</h1>
+        <p class="sub-text">Advanced Library & Quiz Arena</p>
+
+        <div class="input-container">
+            <i class="fas fa-envelope"></i>
+            <input type="email" id="email" placeholder="Student Email" autocomplete="off">
+        </div>
+
+        <div class="input-container">
+            <i class="fas fa-lock"></i>
+            <input type="password" id="password" placeholder="Password">
+        </div>
+
+        <button onclick="handleLogin()"><i class="fas fa-sign-in-alt"></i> Login Securely</button>
+        <p id="msg"></p>
+
+        <a href="/register-page" class="register-link">Don't have an account? <span>Create Now</span></a>
     </div>
 
     <script>
@@ -45,27 +199,34 @@
             const password = document.getElementById('password').value;
             const msg = document.getElementById('msg');
 
-            msg.innerText = "Checking...";
+            if(!email || !password) {
+                msg.innerText = "⚠️ Please fill in all fields.";
+                msg.style.color = "#ffcccc";
+                return;
+            }
 
-            const formData = new URLSearchParams();;
+            msg.innerText = "🔄 Authenticating...";
+            msg.style.color = "#fff";
+
+            const formData = new URLSearchParams();
             formData.append("username", email);
             formData.append("password", password);
 
             try {
-                const response = await fetch("/login", { method: "POST", body: formData });
-                const data = await response.json();
-
-                if (response.ok) {
-                    msg.innerText = "Success! Redirecting...";
-                    msg.style.color = "green";
+                const res = await fetch("/login", { method: "POST", body: formData });
+                const data = await res.json();
+                if (res.ok) {
+                    msg.innerHTML = "✅ Login Successful! <br> Loading Dashboard...";
+                    msg.style.color = "#a8ff78";
                     localStorage.setItem("token", data.access_token);
-                    setTimeout(() => { window.location.href = "/dashboard"; }, 500);
+                    setTimeout(() => window.location.href = "/dashboard", 1200);
                 } else {
-                    msg.innerText = "Error: " + data.detail;
-                    msg.style.color = "red";
+                    msg.innerText = "❌ Error: " + data.detail;
+                    msg.style.color = "#ffcccc";
                 }
-            } catch (error) {
-                msg.innerText = "Server Error!";
+            } catch (e) {
+                msg.innerText = "⚠️ Server Connection Error!";
+                msg.style.color = "#ffcccc";
             }
         }
     </script>

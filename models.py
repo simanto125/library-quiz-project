@@ -16,7 +16,7 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-# --- Book Models ---
+# --- Book Models (Updated with PDF & Premium Info) ---
 class BookCreate(BaseModel):
     title: str
     author: str
@@ -24,14 +24,26 @@ class BookCreate(BaseModel):
     category: str
     total_copies: int
     available_copies: int
+    read_link: Optional[str] = "#"      # অনলাইনে পড়ার লিংক (যেমন Google Drive PDF Viewer Link)
+    download_link: Optional[str] = "#"  # ডাউনলোড করার আসল লিংক
+    is_premium: bool = False            # বইটি কি পেইড? (True/False)
+    price: int = 0                      # বইয়ের দাম (যদি Premium হয়)
 
-# --- Quiz Models (নতুন অ্যাড করা হলো) ---
+# --- Quiz Models (Updated) ---
 class QuestionCreate(BaseModel):
     question_text: str
-    options: List[str]      # যেমন: ["Dhaka", "Khulna", "Sylhet", "Rajshahi"]
-    correct_answer: str     # যেমন: "Dhaka"
-    category: str           # যেমন: "General Knowledge"
+    options: List[str]
+    correct_answer: str
+    category: str
 
 class QuizSubmit(BaseModel):
     question_id: str
     selected_answer: str
+
+# নতুন: কুইজ রেজাল্ট সেভ করার জন্য
+class QuizResult(BaseModel):
+    student_email: str
+    score: int
+    out_of: int
+    percentage: float
+    category: str

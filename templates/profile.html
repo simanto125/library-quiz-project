@@ -2,56 +2,78 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Profile</title>
+    <title>My Profile - LMS</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { font-family: 'Poppins', sans-serif; background: #eef2f3; padding: 40px; }
-        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        body { font-family: 'Poppins', sans-serif; background: #eef2f3; padding: 40px; margin: 0; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
         .header { text-align: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 20px; margin-bottom: 20px; }
-        .user-info h2 { color: #2c3e50; margin: 0; }
+        .user-info h2 { color: #2c3e50; margin: 0; font-size: 28px; }
+        .user-info p { color: #7f8c8d; font-size: 16px; margin-top: 5px; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background: #34495e; color: white; }
+        th, td { border: 1px solid #ddd; padding: 15px; text-align: center; }
+        th { background: #34495e; color: white; font-weight: 600; }
         tr:nth-child(even) { background-color: #f9f9f9; }
 
-        .btn-return { background: #c0392b; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .btn-return:hover { background: #a93226; }
-        .back-btn { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; font-weight: bold; font-size: 18px; }
+        .btn-action { color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; margin: 2px; transition: 0.3s; font-size: 12px; text-decoration: none; display: inline-block; }
+        .btn-read { background: #27ae60; } .btn-read:hover { background: #1e8449; }
+        .btn-ai { background: #8e44ad; } .btn-ai:hover { background: #732d91; }
+        .btn-return { background: #e74c3c; } .btn-return:hover { background: #c0392b; }
 
-        /* 🔴 Red Alert Animation */
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
-        .red-alert { color: red; font-weight: bold; animation: blink 1s infinite; }
+        .back-btn { display: inline-block; margin-bottom: 20px; text-decoration: none; color: #3498db; font-weight: bold; font-size: 16px; }
+
+        /* AI Modal */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(5px); }
+        .modal-content { background: white; margin: 10% auto; padding: 30px; width: 500px; border-radius: 15px; text-align: center; box-shadow: 0 15px 30px rgba(0,0,0,0.3); position: relative; }
+        .close-btn { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #aaa; }
+        .ai-loader { border: 4px solid #f3f3f3; border-top: 4px solid #8e44ad; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .ai-text { font-style: italic; color: #555; line-height: 1.6; text-align: justify; padding: 10px; background: #f9f9f9; border-left: 4px solid #8e44ad; margin-top: 15px; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <a href="/dashboard" class="back-btn">⬅ Back to Dashboard</a>
+        <a href="/dashboard" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
 
         <div class="header">
             <div class="user-info">
-                <h2 id="userName">User Profile</h2>
-                <p id="userEmail">Loading...</p>
+                <h2 id="userName"><i class="fas fa-user-graduate"></i> Student Profile</h2>
+                <p id="userEmail">Loading profile data...</p>
             </div>
         </div>
 
-        <h3>📚 My Borrowed Books</h3>
-        <p>Return books on time to avoid fines!</p>
+        <h3><i class="fas fa-book-reader"></i> My Borrowed Books</h3>
 
         <table>
             <thead>
                 <tr>
                     <th>Book Title</th>
-                    <th>Issue Date</th>
                     <th>Return Date</th>
-                    <th>Action</th>
+                    <th>Smart Actions</th>
+                    <th>Return</th>
                 </tr>
             </thead>
             <tbody id="borrowList">
-                <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
+                <tr><td colspan="4">Loading your books...</td></tr>
             </tbody>
         </table>
+    </div>
+
+    <!-- 🤖 AI Summary Modal -->
+    <div id="aiModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeAiModal()">&times;</span>
+            <h3 style="color:#8e44ad;"><i class="fas fa-robot"></i> AI Book Summary</h3>
+            <h4 id="aiBookTitle" style="margin:0; color:#333;"></h4>
+
+            <div id="aiLoader" class="ai-loader" style="display:none;"></div>
+            <p id="aiThinking" style="display:none; color:#8e44ad; font-weight:bold;">AI is reading the book...</p>
+
+            <div id="aiResult" class="ai-text" style="display:none;"></div>
+        </div>
     </div>
 
     <script>
@@ -61,7 +83,8 @@
         async function loadProfile() {
             const res = await fetch("/users/me", { headers: { "Authorization": "Bearer " + token }});
             const data = await res.json();
-            document.getElementById("userEmail").innerText = "Email: " + data.email;
+            document.getElementById("userName").innerHTML = `<i class="fas fa-user-graduate"></i> ${data.name}`;
+            document.getElementById("userEmail").innerText = data.email;
         }
 
         async function loadBorrowedBooks() {
@@ -71,48 +94,56 @@
             list.innerHTML = "";
 
             if (books.length === 0) {
-                list.innerHTML = "<tr><td colspan='4' style='text-align:center;'>No books borrowed yet.</td></tr>";
+                list.innerHTML = "<tr><td colspan='4' style='color:#7f8c8d;'>No books borrowed.</td></tr>";
                 return;
             }
 
-            let today = new Date();
-            today.setHours(0,0,0,0);
-
             books.forEach(b => {
-                // Timezone fix
-                let returnDate = new Date(b.return_date + "T00:00:00");
-                let diffTime = returnDate.getTime() - today.getTime();
-                let diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-                let dateStyle = "color:black;";
-                let alertIcon = "";
-
-                // 🔴 অ্যালার্ট লজিক
-                if (diffDays === 1 || diffDays === 0) {
-                    dateStyle = "color:red; font-weight:bold;";
-                    alertIcon = "<span class='red-alert'> 🔴 (Alert: " + diffDays + " day left)</span>";
-                } else if (diffDays < 0) {
-                    dateStyle = "color:darkred; font-weight:bold;";
-                    alertIcon = " ❌ (Overdue!)";
-                } else {
-                    alertIcon = ` <span style='color:green; font-size:12px;'>(${diffDays} days left)</span>`;
-                }
+                // আসল বই পড়ার লিংক (যদি না থাকে তবে ডেমো পিডিএফ)
+                let readLink = b.read_link && b.read_link !== "#" ? b.read_link : "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
 
                 list.innerHTML += `
                     <tr>
                         <td><b>${b.book_title}</b></td>
-                        <td>${b.issue_date}</td>
-                        <td style="${dateStyle}">${b.return_date} ${alertIcon}</td>
-                        <td><button class="btn-return" onclick="returnBook('${b.isbn}')">Return Book</button></td>
+                        <td>${b.return_date}</td>
+                        <td>
+                            <a href="${readLink}" target="_blank" class="btn-action btn-read"><i class="fas fa-book-open"></i> Read Book</a>
+                            <button class="btn-action btn-ai" onclick="generateSummary('${b.book_title}')"><i class="fas fa-magic"></i> AI Summary</button>
+                        </td>
+                        <td><button class="btn-action btn-return" onclick="returnBook('${b.isbn}')"><i class="fas fa-undo"></i> Return</button></td>
                     </tr>
                 `;
             });
         }
 
         async function returnBook(isbn) {
-            if(!confirm("Are you sure you want to return this book?")) return;
+            if(!confirm("Return this book?")) return;
             const res = await fetch("/books/return/" + isbn, { method: "POST", headers: { "Authorization": "Bearer " + token }});
-            if(res.ok) { alert("Book Returned Successfully!"); loadBorrowedBooks(); }
+            if(res.ok) { alert("Returned! ✅"); loadBorrowedBooks(); }
+        }
+
+        // --- 🤖 AI Feature Logic ---
+        function generateSummary(title) {
+            document.getElementById("aiModal").style.display = "block";
+            document.getElementById("aiBookTitle").innerText = title;
+            document.getElementById("aiResult").style.display = "none";
+            document.getElementById("aiLoader").style.display = "block";
+            document.getElementById("aiThinking").style.display = "block";
+
+            // ফেক ডিলে দিয়ে ভাব নেওয়া যে AI চিন্তা করছে
+            setTimeout(async () => {
+                const res = await fetch(`/ai/summary/${title}`, { headers: { "Authorization": "Bearer " + token }});
+                const data = await res.json();
+
+                document.getElementById("aiLoader").style.display = "none";
+                document.getElementById("aiThinking").style.display = "none";
+                document.getElementById("aiResult").style.display = "block";
+                document.getElementById("aiResult").innerText = data.summary;
+            }, 2500); // ২.৫ সেকেন্ড সময় নিবে
+        }
+
+        function closeAiModal() {
+            document.getElementById("aiModal").style.display = "none";
         }
 
         loadProfile();

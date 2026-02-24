@@ -3,217 +3,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Library Dashboard</title>
-    <!-- Google Fonts & FontAwesome Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>LMS Pro - Dashboard</title>
+    <!-- 🎨 Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        body { margin: 0; font-family: 'Poppins', sans-serif; background: #f4f7f6; display: flex; }
-
-        /* 🏰 সাইডবার ডিজাইন */
-        .sidebar { width: 260px; background: #2c3e50; color: white; height: 100vh; padding: 25px; position: fixed; box-sizing: border-box; }
-        .sidebar h2 { text-align: center; margin-bottom: 40px; font-size: 24px; color: #3498db; }
-        .sidebar ul { list-style: none; padding: 0; }
-        .sidebar ul li { padding: 15px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: 0.3s; display: flex; align-items: center; }
-        .sidebar ul li:hover { background: #34495e; transform: translateX(10px); }
-        .sidebar ul li i { margin-right: 15px; font-size: 18px; width: 25px; }
-        .active-link { background: #3498db !important; }
-
-        /* 🖥️ মেইন কন্টেন্ট এরিয়া */
-        .content { margin-left: 260px; padding: 40px; width: calc(100% - 260px); box-sizing: border-box; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; background: white; padding: 20px 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .header h1 { margin: 0; font-size: 22px; color: #2c3e50; }
-
-        /* 🔍 সার্চ বার */
-        .search-container { position: relative; margin-bottom: 30px; }
-        .search-box { width: 100%; max-width: 500px; padding: 15px 20px 15px 50px; border: none; border-radius: 30px; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); outline: none; transition: 0.3s; }
-        .search-box:focus { box-shadow: 0 4px 20px rgba(52, 152, 219, 0.3); }
-        .search-icon { position: absolute; left: 20px; top: 18px; color: #7f8c8d; font-size: 18px; }
-
-        /* 📚 বইয়ের কার্ড গ্রিড */
-        .card-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; }
-        .book-card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 6px 20px rgba(0,0,0,0.05); transition: 0.3s; border-top: 5px solid #3498db; }
-        .book-card:hover { transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-        .book-card h3 { margin: 0 0 10px; color: #2c3e50; font-size: 20px; height: 50px; overflow: hidden; }
-        .book-card p { color: #7f8c8d; font-size: 14px; margin: 8px 0; }
-        .book-card i { color: #3498db; margin-right: 8px; }
-
-        .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 10px; }
-        .badge-available { background: #e8f8f5; color: #27ae60; }
-        .badge-out { background: #fdedec; color: #c0392b; }
-
-        /* 🔘 বাটন ডিজাইন */
-        .btn-borrow { background: #3498db; color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 20px; font-weight: 600; font-size: 15px; transition: 0.3s; }
-        .btn-borrow:hover:not(:disabled) { background: #2980b9; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4); }
-        .btn-borrow:disabled { background: #bdc3c7; cursor: not-allowed; }
-
-        .btn-logout { background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
-        .btn-logout:hover { background: #c0392b; }
-
-        /* 📱 মোবাইল রেসপন্সিভ */
-        @media (max-width: 768px) {
-            .sidebar { width: 70px; padding: 10px; }
-            .sidebar h2, .sidebar span { display: none; }
-            .content { margin-left: 70px; width: calc(100% - 70px); }
+        :root {
+            --primary: #1a2a6c;
+            --secondary: #f39c12;
+            --accent: #e74c3c;
+            --bg: #f8f9fa;
+            --text-dark: #2d3436;
         }
+
+        body { margin: 0; font-family: 'Poppins', sans-serif; background: var(--bg); display: flex; color: var(--text-dark); }
+
+        /* 🏰 Modern Sidebar */
+        .sidebar {
+            width: 270px;
+            background: linear-gradient(180deg, #1a2a6c, #2c3e50);
+            color: white;
+            height: 100vh;
+            padding: 30px 20px;
+            position: fixed;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+        .sidebar h2 { text-align: center; margin-bottom: 40px; font-weight: 700; color: var(--secondary); letter-spacing: 1px; }
+        .sidebar ul { list-style: none; padding: 0; }
+        .sidebar ul li {
+            padding: 14px 20px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex; align-items: center;
+            font-weight: 500;
+            background: rgba(255,255,255,0.05);
+        }
+        .sidebar ul li:hover { background: var(--secondary); color: var(--primary); transform: translateX(8px); }
+        .sidebar ul li i { margin-right: 15px; font-size: 18px; width: 25px; text-align: center; }
+        .active-link { background: var(--secondary) !important; color: var(--primary) !important; font-weight: 700 !important; }
+
+        /* 🖥️ Main Content Area */
+        .content { margin-left: 270px; padding: 40px; width: calc(100% - 270px); box-sizing: border-box; }
+
+        /* 👋 Header with clear Text */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            background: white;
+            padding: 20px 35px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .header h1 { margin: 0; font-size: 26px; color: var(--primary); font-weight: 700; }
+        .header h1 span { color: var(--accent); } /* "Hello" পার্টটা রেড করার জন্য */
+
+        .user-profile { display: flex; align-items: center; gap: 15px; }
+        .user-avatar { width: 45px; height: 45px; background: var(--secondary); color: var(--primary); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: 700; font-size: 20px; }
+        .btn-logout { background: #ff7675; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .btn-logout:hover { background: #d63031; }
+
+        /* 🔍 Search & Filters */
+        .controls { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-bottom: 35px; }
+        .search-box { flex-grow: 1; padding: 14px 25px; border: 2px solid #edf2f7; border-radius: 30px; font-size: 15px; outline: none; transition: 0.3s; }
+        .search-box:focus { border-color: var(--secondary); box-shadow: 0 0 10px rgba(243, 156, 18, 0.1); }
+
+        .cat-btn { background: #f1f2f6; border: none; padding: 10px 22px; border-radius: 30px; cursor: pointer; font-weight: 600; color: #57606f; transition: 0.3s; }
+        .cat-btn:hover, .cat-btn.active { background: var(--primary); color: white; }
+
+        /* 📚 CLEAR Book Cards */
+        .card-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; }
+        .book-card {
+            background: white;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+            transition: 0.3s;
+            border-bottom: 5px solid transparent;
+        }
+        .book-card:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); border-bottom-color: var(--secondary); }
+
+        .book-card h3 {
+            margin: 10px 0;
+            color: var(--primary);
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.3;
+            min-height: 58px; /* টেক্সট যাতে কেটে না যায় */
+        }
+        .book-card p { color: #57606f; font-size: 14px; margin: 8px 0; font-weight: 500; display: flex; align-items: center; gap: 10px; }
+        .book-card i { color: var(--secondary); width: 15px; }
+
+        .badge { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-block; margin-top: 10px; }
+        .badge-free { background: #e3fcef; color: #00875a; }
+        .badge-premium { background: #fff9db; color: #f08c00; border: 1px solid #ffe066; }
+
+        .btn-borrow { width: 100%; padding: 14px; border: none; border-radius: 12px; margin-top: 20px; font-weight: 700; cursor: pointer; transition: 0.3s; background: var(--primary); color: white; font-size: 15px; text-transform: uppercase; }
+        .btn-borrow:hover:not(:disabled) { background: var(--secondary); color: var(--primary); }
+        .btn-borrow:disabled { background: #dfe4ea; color: #a4b0be; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <!-- 🏰 সাইডবার -->
+    <!-- Sidebar -->
     <div class="sidebar">
-        <h2>📚 LMS Pro</h2>
+        <h2><i class="fas fa-university"></i> LMS Pro</h2>
         <ul>
-            <li class="active-link" onclick="loadBooks()"><i class="fas fa-book"></i> <span>Library Books</span></li>
-            <li onclick="window.location.href='/quiz'"><i class="fas fa-stopwatch"></i> <span>Take Quiz</span></li>
+            <li class="active-link" onclick="window.location.reload()"><i class="fas fa-home"></i> <span>Dashboard</span></li>
+            <li onclick="window.location.href='/quiz'"><i class="fas fa-lightbulb"></i> <span>Quiz Arena</span></li>
+            <li onclick="window.location.href='/leaderboard'"><i class="fas fa-chart-line"></i> <span>Leaderboard</span></li>
             <li onclick="window.location.href='/profile'"><i class="fas fa-user-circle"></i> <span>My Profile</span></li>
-            <!-- 🛡️ এই বাটনটি শুধুমাত্র অ্যাডমিন দেখতে পাবে -->
             <li id="admin-link" style="display: none;" onclick="window.location.href='/admin'"><i class="fas fa-user-shield"></i> <span>Admin Panel</span></li>
-            <li onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></li>
+            <li onclick="logout()" style="margin-top: 30px;"><i class="fas fa-sign-out-alt"></i> <span>Logout</span></li>
         </ul>
     </div>
 
-    <!-- 🖥️ মেইন কন্টেন্ট -->
+    <!-- Main Content -->
     <div class="content">
+
+        <!-- Header -->
         <div class="header">
-            <h1 id="welcome-msg">Welcome, User!</h1>
-            <button class="btn-logout" onclick="logout()"><i class="fas fa-power-off"></i> Logout</button>
+            <h1 id="welcome-msg"><span>Hello,</span> User! 👋</h1>
+            <div class="user-profile">
+                <div class="user-avatar" id="avatar">?</div>
+                <button class="btn-logout" onclick="logout()"><i class="fas fa-power-off"></i> Logout</button>
+            </div>
         </div>
 
-        <!-- 🔍 সার্চ বার -->
-        <div class="search-container">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" id="searchInput" class="search-box" placeholder="Search by Book Title, Author or Category..." onkeyup="searchBooks()">
+        <!-- Search & Filter Area -->
+        <div class="controls">
+            <input type="text" id="searchInput" class="search-box" placeholder="Search by Book Name, Author or Category..." onkeyup="searchBooks()">
+            <div class="category-tabs">
+                <button class="cat-btn active" onclick="filterCategory('All', this)">All Books</button>
+                <button class="cat-btn" onclick="filterCategory('Programming', this)">Programming</button>
+                <button class="cat-btn" onclick="filterCategory('Novel', this)">Novels</button>
+            </div>
         </div>
 
-        <h2 style="color:#2c3e50; margin-bottom: 25px;">📖 Explore Library</h2>
-
-        <!-- 📚 বইয়ের গ্রিড -->
+        <!-- Book Grid -->
         <div class="card-container" id="book-list">
-            <!-- জাভাস্ক্রিপ্ট দিয়ে এখানে বই লোড হবে -->
-            <p>Loading books from database...</p>
+            <p style="grid-column: 1/-1; text-align: center; color: #888;">Updating library catalog...</p>
         </div>
     </div>
 
     <script>
         const token = localStorage.getItem("token");
+        if (!token) window.location.href = "/";
 
-        // টোকেন না থাকলে লগিন পেজে পাঠিয়ে দিবে
-        if (!token) {
-            window.location.href = "/";
-        }
+        let currentCategory = "All";
 
-        // ১. ইউজারের তথ্য ও রোল চেক করা
         async function loadProfile() {
             try {
-                const res = await fetch("/users/me", {
-                    headers: { "Authorization": "Bearer " + token }
-                });
+                const res = await fetch("/users/me", { headers: { "Authorization": "Bearer " + token }});
                 const data = await res.json();
-
                 if (res.ok) {
-                    // নাম দেখানো (ইমেইল থেকে @ এর আগের অংশ)
-                    document.getElementById("welcome-msg").innerHTML = `Hi, <span style="color:#3498db;">${data.email.split('@')[0]}</span>! Welcome back.`;
-
-                    // 🛡️ রোল চেক: যদি অ্যাডমিন হয়, তবে বাটন দেখাও
-                    if (data.role === "admin") {
-                        document.getElementById("admin-link").style.display = "flex";
-                    }
-                } else {
-                    logout(); // টোকেন সমস্যা থাকলে লগআউট
-                }
-            } catch (error) {
-                console.error("Profile Error:", error);
-            }
+                    // নামটা বোল্ড এবং বড় করে দেখানো হয়েছে
+                    document.getElementById("welcome-msg").innerHTML = `<span>Hello,</span> ${data.name}! 👋`;
+                    document.getElementById("avatar").innerText = data.name.charAt(0).toUpperCase();
+                    if (data.role === "admin") document.getElementById("admin-link").style.display = "flex";
+                } else logout();
+            } catch(e) { logout(); }
         }
 
-        // ২. বই লোড করা ও সার্চ ফাংশন
-        async function loadBooks(query = "") {
-            try {
-                let url = "/books";
-                if (query) url += "?search=" + encodeURIComponent(query);
-
-                const res = await fetch(url);
-                const books = await res.json();
-                const container = document.getElementById("book-list");
-
-                container.innerHTML = "";
-
-                if (books.length === 0) {
-                    container.innerHTML = "<div style='text-align:center; grid-column: 1/-1; padding: 50px;'><i class='fas fa-search-minus' style='font-size:40px; color:#bdc3c7;'></i><p>No books found matching your search.</p></div>";
-                    return;
-                }
-
-                books.forEach(book => {
-                    const isAvailable = book.available_copies > 0;
-                    const html = `
-                        <div class="book-card">
-                            <h3>${book.title}</h3>
-                            <p><i class="fas fa-pen-nib"></i> ${book.author}</p>
-                            <p><i class="fas fa-tags"></i> ${book.category}</p>
-                            <p><i class="fas fa-hashtag"></i> ISBN: ${book.isbn}</p>
-                            <span class="badge ${isAvailable ? 'badge-available' : 'badge-out'}">
-                                ${isAvailable ? 'Available: ' + book.available_copies : 'Out of Stock'}
-                            </span>
-                            <button class="btn-borrow"
-                                    onclick="borrowBook('${book.isbn}')"
-                                    ${!isAvailable ? 'disabled' : ''}>
-                                ${isAvailable ? '<i class="fas fa-hand-holding"></i> Borrow Now' : 'Not Available'}
-                            </button>
-                        </div>
-                    `;
-                    container.innerHTML += html;
-                });
-            } catch (error) {
-                console.error("Load Books Error:", error);
-            }
+        function filterCategory(cat, btn) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            searchBooks();
         }
 
-        // ৩. সার্চ টাইপিং হ্যান্ডলার
-        function searchBooks() {
-            const query = document.getElementById("searchInput").value;
-            loadBooks(query);
-        }
+        async function loadBooks(query = "", category = "All") {
+            let url = "/books?";
+            if (query) url += "search=" + encodeURIComponent(query) + "&";
+            if (category !== "All") url += "category=" + encodeURIComponent(category);
 
-        // ৪. বই ধার নেওয়ার ফাংশন
-        async function borrowBook(isbn) {
-            // ইউজারের কাছে জানতে চাইবে কত দিনের জন্য নিবে
-            let days = prompt("কত দিনের জন্য বইটি নিতে চাও? (যেমন: 3, 7, 10 দিন)", "7");
+            const res = await fetch(url);
+            const books = await res.json();
+            const container = document.getElementById("book-list");
+            container.innerHTML = "";
 
-            if (days === null || days.trim() === "") return; // Cancel করলে বন্ধ হবে
-
-            days = parseInt(days);
-            if (isNaN(days) || days <= 0) {
-                alert("দয়া করে সঠিক দিন লিখুন!");
+            if (books.length === 0) {
+                container.innerHTML = "<div style='grid-column:1/-1; text-align:center; padding:50px;'><p style='font-size:20px; color:#aaa;'>No books found!</p></div>";
                 return;
             }
 
-            try {
-                // লিংকের সাথে days প্যারামিটার পাঠানো হচ্ছে
-                const res = await fetch(`/books/borrow/${isbn}?days=${days}`, {
-                    method: "POST",
-                    headers: { "Authorization": "Bearer " + token }
-                });
+            books.forEach(book => {
+                const isAvailable = book.available_copies > 0;
+                let badgeClass = book.is_premium ? 'badge-premium' : 'badge-free';
+                let badgeText = book.is_premium ? `<i class='fas fa-crown'></i> Paid: ${book.price} BDT` : `<i class='fas fa-check'></i> Free`;
 
-                const data = await res.json();
-                if (res.ok) {
-                    alert("✅ " + data.message);
-                    loadBooks(); // রিফ্রেশ করে কপি আপডেট করা
-                } else {
-                    alert("❌ Error: " + data.detail);
-                }
-            } catch (error) {
-                alert("Server Connection Error!");
+                container.innerHTML += `
+                    <div class="book-card">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="badge ${badgeClass}">${badgeText}</span>
+                            <span style="font-size:13px; color:#aaa;">Stock: ${book.available_copies}</span>
+                        </div>
+                        <h3>${book.title}</h3>
+                        <p><i class="fas fa-user-edit"></i> Author: ${book.author}</p>
+                        <p><i class="fas fa-folder-open"></i> ${book.category}</p>
+                        <button class="btn-borrow" onclick="borrowBook('${book.isbn}', ${book.is_premium}, ${book.price})" ${!isAvailable ? 'disabled' : ''}>
+                            ${isAvailable ? 'Borrow This Book' : 'Out of Stock'}
+                        </button>
+                    </div>`;
+            });
+        }
+
+        function searchBooks() {
+            const query = document.getElementById("searchInput").value;
+            loadBooks(query, currentCategory);
+        }
+
+        async function borrowBook(isbn, isPremium, price) {
+            let days = prompt("How many days to borrow? (Max 14)", "7");
+            if (!days) return;
+
+            const res = await fetch(`/books/borrow/${isbn}?days=${days}`, {
+                method: "POST",
+                headers: { "Authorization": "Bearer " + token }
+            });
+
+            if(res.ok) {
+                alert("🎉 Successfully borrowed! Check 'My Profile' to read.");
+                loadBooks();
+            } else {
+                const err = await res.json();
+                alert("❌ Error: " + err.detail);
             }
         }
-        // ৫. লগআউট ফাংশন
-        function logout() {
-            localStorage.removeItem("token");
-            window.location.href = "/";
-        }
 
-        // পেজ লোড হওয়ার সময় রান হবে
+        function logout() { localStorage.removeItem("token"); window.location.href = "/"; }
+
         loadProfile();
         loadBooks();
     </script>
