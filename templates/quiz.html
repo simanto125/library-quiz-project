@@ -140,11 +140,12 @@
 <div class="container">
     <a href="/dashboard" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
 
-    <!-- Setup Box -->
+     <!-- Setup Box -->
     <div id="setup-box" class="setup-box">
         <h1><i class="fas fa-brain"></i> Quiz Arena</h1>
         <p>Customize your challenge:</p>
 
+        <!-- 🔥 Topic Selection 🔥 -->
         <div class="input-group">
             <label>Select Topic:</label>
             <select id="topicSelect">
@@ -158,16 +159,16 @@
             </select>
         </div>
 
+        <!-- 🔥 Custom Question Count (NEW) 🔥 -->
         <div class="input-group">
             <label>Number of Questions:</label>
-            <select id="mcqCount">
-                <option value="5">5 Questions (Quick)</option>
-                <option value="10">10 Questions (Standard)</option>
-                <option value="15">15 Questions (Hard)</option>
-                <option value="20">20 Questions (Pro)</option>
-                <option value="random">🎲 Surprise Me! (Random)</option>
-            </select>
+            <input type="number" id="mcqCount" min="1" max="100" value="5" style="padding: 12px; font-size: 16px; border-radius: 8px; border: 1px solid #ccc; width: 100%; outline: none; box-sizing: border-box;" placeholder="Enter number (e.g. 7, 20)">
         </div>
+
+        <!-- 🔥 Random Surprise Button (NEW) 🔥 -->
+        <button onclick="document.getElementById('mcqCount').value = Math.floor(Math.random() * 20) + 5;" style="background: #f39c12; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; margin-bottom: 15px; font-size: 14px;">
+            <i class="fas fa-dice"></i> Surprise Me! (Random Count)
+        </button>
 
         <br>
         <button class="btn btn-start" onclick="startQuiz()">🚀 Start Quiz Now</button>
@@ -243,12 +244,13 @@
         .then(data => { studentName = data.name; });
 
     async function startQuiz() {
-        let count = document.getElementById("mcqCount").value;
+        // 🔥 Custom input থেকে ভ্যালু নিচ্ছে
+        let count = parseInt(document.getElementById("mcqCount").value);
         let topic = document.getElementById("topicSelect").value;
 
-        if (count === "random") {
-            count = Math.floor(Math.random() * (15 - 5 + 1)) + 5;
-            alert(`🎲 Surprise! You have got ${count} random questions.`);
+        if (isNaN(count) || count < 1) {
+            alert("Please enter a valid number greater than 0.");
+            return;
         }
 
         const res = await fetch(`/quiz/start?limit=${count}&category=${topic}`, {

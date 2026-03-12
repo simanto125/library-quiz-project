@@ -7,6 +7,7 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     role: str = "student"
+    is_verified: bool = False
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -16,7 +17,11 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-# --- Book Models (Updated with PDF & Premium Info) ---
+class OTPVerify(BaseModel):
+    email: str
+    otp: str
+
+# --- 🔥 Book Models (Updated with Cover Image) ---
 class BookCreate(BaseModel):
     title: str
     author: str
@@ -24,12 +29,14 @@ class BookCreate(BaseModel):
     category: str
     total_copies: int
     available_copies: int
-    read_link: Optional[str] = "#"      # অনলাইনে পড়ার লিংক (যেমন Google Drive PDF Viewer Link)
-    download_link: Optional[str] = "#"  # ডাউনলোড করার আসল লিংক
-    is_premium: bool = False            # বইটি কি পেইড? (True/False)
-    price: int = 0                      # বইয়ের দাম (যদি Premium হয়)
+    read_link: Optional[str] = "#"
+    download_link: Optional[str] = "#"
+    is_premium: bool = False
+    price: int = 0
+    # 🔥 নতুন যোগ করা হলো: বইয়ের কভার ছবির লিংক
+    image_url: Optional[str] = "https://via.placeholder.com/150x200.png?text=No+Cover"
 
-# --- Quiz Models (Updated) ---
+# --- Quiz Models ---
 class QuestionCreate(BaseModel):
     question_text: str
     options: List[str]
@@ -40,7 +47,6 @@ class QuizSubmit(BaseModel):
     question_id: str
     selected_answer: str
 
-# নতুন: কুইজ রেজাল্ট সেভ করার জন্য
 class QuizResult(BaseModel):
     student_email: str
     score: int
