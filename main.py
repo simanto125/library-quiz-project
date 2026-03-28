@@ -28,11 +28,10 @@ otp_collection = client.library_quiz_db.get_collection("otps")
 reviews_collection = client.library_quiz_db.get_collection("book_reviews")
 
 # --- 📧 Email System ---
-SENDER_EMAIL = "simantocb17@gmail.com"
-SENDER_PASSWORD = "pxyoyjlokxvfkswb"
+SENDER_EMAIL = "simantocb17@gmail.com"  # 👈 তোমার জিমেইল
+SENDER_PASSWORD = "pxyoyjlokxvfkswb"  # 👈 App Password
 
 
-# 🔥 Updated to run faster in background
 def send_otp_email_background(receiver_email: str, otp: str):
     try:
         msg = MIMEText(f"Hello!\n\nYour OTP for LMS Pro is: {otp}\n\nDo not share this with anyone.")
@@ -45,9 +44,9 @@ def send_otp_email_background(receiver_email: str, otp: str):
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
         server.sendmail(SENDER_EMAIL, receiver_email, msg.as_string())
         server.close()
-        print(f"OTP sent to {receiver_email}")
+        print(f"✅ OTP sent successfully to {receiver_email}")
     except Exception as e:
-        print("Email Error:", e)
+        print(f"❌ Email Error: {e}")
 
 
 # 🔥 Live Exam Global Variable
@@ -77,9 +76,12 @@ async def get_current_user_role(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=401, detail="Invalid Session")
 
 
-async def admin_required(role: str = Depends(get_current_user_role)):
-    if role != "admin": raise HTTPException(status_code=403, detail="Admin Only!")
-    return role
+async def admin_required(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        if payload.get("role") != "admin": raise HTTPException(status_code=403, detail="Admin Only!")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 app = FastAPI(title="Advanced Library & Quiz System")
@@ -87,38 +89,43 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-# --- HTML Routes ---
+# --- 🔥 HTML Routes (TypeError Fix Applied) 🔥 ---
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request): return templates.TemplateResponse("login.html", {"request": request})
+async def read_root(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
 
 
 @app.get("/register-page", response_class=HTMLResponse)
-async def get_register_page(request: Request): return templates.TemplateResponse("register.html", {"request": request})
+async def get_register_page(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def get_dashboard(request: Request): return templates.TemplateResponse("dashboard.html", {"request": request})
+async def get_dashboard(request: Request):
+    return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
 @app.get("/quiz", response_class=HTMLResponse)
-async def get_quiz_page(request: Request): return templates.TemplateResponse("quiz.html", {"request": request})
+async def get_quiz_page(request: Request):
+    return templates.TemplateResponse("quiz.html", {"request": request})
 
 
 @app.get("/profile", response_class=HTMLResponse)
-async def get_profile_page(request: Request): return templates.TemplateResponse("profile.html", {"request": request})
+async def get_profile_page(request: Request):
+    return templates.TemplateResponse("profile.html", {"request": request})
 
 
 @app.get("/admin", response_class=HTMLResponse)
-async def get_admin_page(request: Request): return templates.TemplateResponse("admin.html", {"request": request})
+async def get_admin_page(request: Request):
+    return templates.TemplateResponse("admin.html", {"request": request})
 
 
 @app.get("/leaderboard", response_class=HTMLResponse)
-async def get_leaderboard_page(request: Request): return templates.TemplateResponse("leaderboard.html",
-                                                                                    {"request": request})
+async def get_leaderboard_page(request: Request):
+    return templates.TemplateResponse("leaderboard.html", {"request": request})
 
 
 # --- Auth API ---
-# 🔥 Using BackgroundTasks to make registration instantly fast
 @app.post("/register")
 async def register_user(user: UserCreate, background_tasks: BackgroundTasks):
     existing_user = await users_collection.find_one({"email": user.email})
@@ -129,8 +136,6 @@ async def register_user(user: UserCreate, background_tasks: BackgroundTasks):
             await users_collection.delete_one({"email": user.email})
 
     otp = str(random.randint(100000, 999999))
-
-    # Send email in background so user doesn't wait
     background_tasks.add_task(send_otp_email_background, user.email, otp)
 
     hashed = get_password_hash(user.password)
@@ -158,7 +163,7 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     if not user or not verify_password(form_data.password, user.get("password", "")): raise HTTPException(
         status_code=401, detail="Incorrect credentials")
     if not user.get("is_verified", False) and user.get("role") != "admin": raise HTTPException(status_code=403,
-                                                                                               detail="Email not verified!")
+                                                                                               detail="Email not verified! Check your inbox for OTP.")
 
     if user.get("is_blocked"):
         block_time_str = user.get("block_until", "")
@@ -205,7 +210,7 @@ async def get_all_users():
 async def block_user(email: str, days: int):
     block_until = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d %H:%M")
     await users_collection.update_one({"email": email}, {"$set": {"is_blocked": True, "block_until": block_until}})
-    return {"message": f"User blocked."}
+    return {"message": "User blocked."}
 
 
 @app.post("/admin/unblock-user", dependencies=[Depends(admin_required)])
@@ -236,8 +241,7 @@ async def get_books(search: str = None, category: str = None):
 async def edit_book(isbn: str, book_data: BookCreate):
     updated_data = book_data.dict(exclude_unset=True)
     result = await books_collection.update_one({"isbn": isbn}, {"$set": updated_data})
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Book not found")
+    if result.matched_count == 0: raise HTTPException(status_code=404, detail="Book not found")
     return {"message": "Book updated successfully!"}
 
 
@@ -268,7 +272,7 @@ async def borrow_book(isbn: str, days: int = Query(7), token: str = Depends(oaut
     return {"message": f"Borrowed for {days} days!"}
 
 
-@app.post("/books/return/{isbn}")
+@app.post("/books/return/{isbn}", dependencies=[Depends(get_current_user_role)])
 async def return_book(isbn: str, token: str = Depends(oauth2_scheme)):
     payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
     record = await issued_books_collection.find_one({"user_email": payload.get("sub"), "isbn": isbn})
@@ -278,7 +282,7 @@ async def return_book(isbn: str, token: str = Depends(oauth2_scheme)):
     return {"message": "Returned"}
 
 
-@app.get("/users/borrowed-books")
+@app.get("/users/borrowed-books", dependencies=[Depends(get_current_user_role)])
 async def get_my_borrowed_books(token: str = Depends(oauth2_scheme)):
     payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
     books = await issued_books_collection.find({"user_email": payload.get("sub")}).to_list(100)
@@ -309,7 +313,7 @@ class ReviewModel(BaseModel):
     comment: str
 
 
-@app.post("/books/review")
+@app.post("/books/review", dependencies=[Depends(get_current_user_role)])
 async def add_review(review: ReviewModel, token: str = Depends(oauth2_scheme)):
     payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
     await reviews_collection.insert_one(
@@ -388,6 +392,7 @@ async def delete_question(q_id: str):
 
 @app.get("/quiz/start")
 async def start_quiz(limit: int = 5, category: str = "All"):
+    # If exam is closed, deny access
     if not exam_status["is_active"]: raise HTTPException(403, "Exam is CLOSED.")
 
     pipeline = []
@@ -395,7 +400,7 @@ async def start_quiz(limit: int = 5, category: str = "All"):
 
     if target_topic and target_topic != "General":
         pipeline.append({"$match": {"category": {"$regex": target_topic, "$options": "i"}}})
-    elif category != "All":
+    elif category != "All":  # Only filter by selected category if no exam topic is set
         pipeline.append({"$match": {"category": {"$regex": category, "$options": "i"}}})
 
     pipeline.append({"$sample": {"size": limit}})
@@ -417,11 +422,11 @@ async def submit_quiz(answers: List[QuizSubmit], token: str = Depends(oauth2_sch
             if correct: score += 1
             res.append({"question": q["question_text"], "your_answer": a.selected_answer,
                         "correct_answer": q["correct_answer"], "status": "Correct" if correct else "Wrong"})
+
     pct = (score / len(answers)) * 100 if answers else 0
     await quiz_results_collection.insert_one(
         {"student_name": payload.get("name", "Student"), "student_email": payload.get("sub"), "score": score,
-         "out_of": len(answers), "percentage": pct,
-         "date": datetime.now().strftime("%Y-%m-%d %H:%M")})
+         "out_of": len(answers), "percentage": pct, "date": datetime.now().strftime("%Y-%m-%d %H:%M")})
     return {"total_score": score, "out_of": len(answers), "percentage": pct, "detailed_results": res}
 
 
