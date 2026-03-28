@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Request, Query
+from fastapi import FastAPI, HTTPException, Depends, Request, Query, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
@@ -29,24 +29,25 @@ reviews_collection = client.library_quiz_db.get_collection("book_reviews")
 
 # --- 📧 Email System ---
 SENDER_EMAIL = "simantocb17@gmail.com"
-SENDER_PASSWORD = "czwricnvkwwlivxv"
+SENDER_PASSWORD = "pxyoyjlokxvfkswb"
 
 
-def send_otp_email(receiver_email: str, otp: str):
+# 🔥 Updated to run faster in background
+def send_otp_email_background(receiver_email: str, otp: str):
     try:
         msg = MIMEText(f"Hello!\n\nYour OTP for LMS Pro is: {otp}\n\nDo not share this with anyone.")
         msg['Subject'] = "LMS Pro - Verify Your Email"
-        msg['From'] = SENDER_EMAIL
+        msg['From'] = f"LMS Pro <{SENDER_EMAIL}>"
         msg['To'] = receiver_email
         server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.ehlo()
         server.starttls()
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
         server.sendmail(SENDER_EMAIL, receiver_email, msg.as_string())
-        server.quit()
-        return True
+        server.close()
+        print(f"OTP sent to {receiver_email}")
     except Exception as e:
         print("Email Error:", e)
-        return False
 
 
 # 🔥 Live Exam Global Variable
@@ -117,8 +118,9 @@ async def get_leaderboard_page(request: Request): return templates.TemplateRespo
 
 
 # --- Auth API ---
+# 🔥 Using BackgroundTasks to make registration instantly fast
 @app.post("/register")
-async def register_user(user: UserCreate):
+async def register_user(user: UserCreate, background_tasks: BackgroundTasks):
     existing_user = await users_collection.find_one({"email": user.email})
     if existing_user:
         if existing_user.get("is_verified"):
@@ -127,15 +129,18 @@ async def register_user(user: UserCreate):
             await users_collection.delete_one({"email": user.email})
 
     otp = str(random.randint(100000, 999999))
-    email_sent = send_otp_email(user.email, otp)
-    if not email_sent: raise HTTPException(status_code=500, detail="Failed to send OTP.")
+
+    # Send email in background so user doesn't wait
+    background_tasks.add_task(send_otp_email_background, user.email, otp)
 
     hashed = get_password_hash(user.password)
     user_dict = {"name": user.name, "email": user.email, "password": hashed, "role": user.role, "is_verified": False,
                  "is_blocked": False, "block_until": ""}
     await users_collection.insert_one(user_dict)
+
+    await otp_collection.delete_many({"email": user.email})
     await otp_collection.insert_one({"email": user.email, "otp": otp, "created_at": datetime.utcnow()})
-    return {"message": "OTP sent to your email. Please verify."}
+    return {"message": "Processing OTP. Check your email shortly."}
 
 
 @app.post("/verify-otp")
@@ -227,7 +232,6 @@ async def get_books(search: str = None, category: str = None):
     return books
 
 
-# 🔥 NEW: Edit Book API
 @app.put("/books/edit/{isbn}", dependencies=[Depends(admin_required)])
 async def edit_book(isbn: str, book_data: BookCreate):
     updated_data = book_data.dict(exclude_unset=True)
@@ -415,7 +419,8 @@ async def submit_quiz(answers: List[QuizSubmit], token: str = Depends(oauth2_sch
                         "correct_answer": q["correct_answer"], "status": "Correct" if correct else "Wrong"})
     pct = (score / len(answers)) * 100 if answers else 0
     await quiz_results_collection.insert_one(
-        {"student_name": payload.get("name", "Student"), "score": score, "out_of": len(answers), "percentage": pct,
+        {"student_name": payload.get("name", "Student"), "student_email": payload.get("sub"), "score": score,
+         "out_of": len(answers), "percentage": pct,
          "date": datetime.now().strftime("%Y-%m-%d %H:%M")})
     return {"total_score": score, "out_of": len(answers), "percentage": pct, "detailed_results": res}
 
