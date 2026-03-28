@@ -28,8 +28,8 @@ otp_collection = client.library_quiz_db.get_collection("otps")
 reviews_collection = client.library_quiz_db.get_collection("book_reviews")
 
 # --- 📧 Email System ---
-SENDER_EMAIL = "তোমার_জিমেইল_এখানে_দাও@gmail.com"
-SENDER_PASSWORD = "তোমার_১৬_অক্ষরের_অ্যাপ_পাসওয়ার্ড_দাও"
+SENDER_EMAIL = "simantocb17@gmail.com"
+SENDER_PASSWORD = "czwricnvkwwlivxv"
 
 
 def send_otp_email(receiver_email: str, otp: str):
