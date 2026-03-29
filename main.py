@@ -14,31 +14,18 @@ from datetime import datetime, timedelta
 from bson import ObjectId
 import random
 import smtplib
-from email.message import EmailMessage  # লেটেস্ট ইমেইল লাইব্রেরি
+from email.message import EmailMessage
 
 SECRET_KEY = "super_secret_key_for_library_project"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-# --- Database Collections ---
 quiz_results_collection = client.library_quiz_db.get_collection("quiz_results")
 otp_collection = client.library_quiz_db.get_collection("otps")
 reviews_collection = client.library_quiz_db.get_collection("book_reviews")
 
-# 🔥 Live Exam Status Global Variable
-exam_status = {
-    "is_active": True,
-    "next_exam_date": "No Exam Scheduled",
-    "exam_topic": "General"
-}
-
-# ----------------------------------------------------
-# 📧 Modern Fast Email System (Cloud Optimized)
-# ----------------------------------------------------
-# 👇 নিচে তোমার নতুন জিমেইল এবং ১৬-অক্ষরের App Password (স্পেস ছাড়া) বসাও
 SENDER_EMAIL = "adminlms482@gmail.com"
 SENDER_PASSWORD = "jaayghzrlqvrqpyz"
 
@@ -46,103 +33,88 @@ SENDER_PASSWORD = "jaayghzrlqvrqpyz"
 def send_otp_email_background(receiver_email: str, otp: str):
     try:
         msg = EmailMessage()
-        msg.set_content(
-            f"Hello!\n\nYour Secure OTP for LMS Pro Registration is: {otp}\n\nPlease enter this 6-digit code in the website to verify your account.\n\nThank you,\nLMS Pro Admin")
-        msg['Subject'] = "LMS Pro - Account Verification OTP"
+        msg.set_content(f"Your OTP for LMS Pro is: {otp}")
+        msg['Subject'] = "LMS Pro - Verify Email"
         msg['From'] = f"LMS Pro <{SENDER_EMAIL}>"
         msg['To'] = receiver_email
-
-        # Cloud সার্ভারের জন্য 587 পোর্ট এবং starttls সবচেয়ে নিরাপদ
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
-            server.ehlo()
             server.starttls()
-            server.ehlo()
             server.login(SENDER_EMAIL, SENDER_PASSWORD)
             server.send_message(msg)
-
-        print(f"✅ OTP successfully sent to {receiver_email} from Cloud Server")
     except Exception as e:
-        print(f"❌ Cloud Email Sending Error: {e}")
+        print(f"Email Error: {e}")
 
 
-# ----------------------------------------------------
-
-def verify_password(plain, hashed): return pwd_context.verify(plain, hashed)
+exam_status = {"is_active": True, "next_exam_date": "No Exam Scheduled", "exam_topic": "General"}
 
 
-def get_password_hash(password): return pwd_context.hash(password)
+def verify_password(p, h): return pwd_context.verify(p, h)
+
+
+def get_password_hash(p): return pwd_context.hash(p)
 
 
 def create_access_token(data: dict):
-    to_encode = data.copy()
-    to_encode.update({"exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode({**data, "exp": datetime.utcnow() + timedelta(minutes=60)}, SECRET_KEY, algorithm=ALGORITHM)
 
 
 async def admin_required(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if payload.get("role") != "admin": raise HTTPException(status_code=403, detail="Admin Only!")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        if payload.get("role") != "admin": raise HTTPException(403)
+    except:
+        raise HTTPException(401)
 
 
-app = FastAPI(title="Advanced Library & Quiz System")
+app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-# --- 🌐 HTML Routes ---
+# --- 🔥 HTML Routes (TypeError Fixed) 🔥 ---
 @app.get("/", response_class=HTMLResponse)
-async def serve_login(request: Request): return templates.TemplateResponse(request=request, name="login.html")
+async def serve_login(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
 
 
 @app.get("/register-page", response_class=HTMLResponse)
-async def serve_register(request: Request): return templates.TemplateResponse(request=request, name="register.html")
+async def serve_register(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
-async def serve_dashboard(request: Request): return templates.TemplateResponse(request=request, name="dashboard.html")
+async def serve_dashboard(request: Request):
+    return templates.TemplateResponse("dashboard.html", {"request": request})
 
 
 @app.get("/quiz", response_class=HTMLResponse)
-async def serve_quiz(request: Request): return templates.TemplateResponse(request=request, name="quiz.html")
+async def serve_quiz(request: Request):
+    return templates.TemplateResponse("quiz.html", {"request": request})
 
 
 @app.get("/profile", response_class=HTMLResponse)
-async def serve_profile(request: Request): return templates.TemplateResponse(request=request, name="profile.html")
+async def serve_profile(request: Request):
+    return templates.TemplateResponse("profile.html", {"request": request})
 
 
 @app.get("/admin", response_class=HTMLResponse)
-async def serve_admin(request: Request): return templates.TemplateResponse(request=request, name="admin.html")
+async def serve_admin(request: Request):
+    return templates.TemplateResponse("admin.html", {"request": request})
 
 
 @app.get("/leaderboard", response_class=HTMLResponse)
-async def serve_leaderboard(request: Request): return templates.TemplateResponse(request=request,
-                                                                                 name="leaderboard.html")
+async def serve_leaderboard(request: Request):
+    return templates.TemplateResponse("leaderboard.html", {"request": request})
 
 
-# ---------------------------------------------------------
-# 🔐 Auth & User APIs (With Background OTP)
-# ---------------------------------------------------------
+# --- Auth APIs ---
 @app.post("/register")
 async def register_user(user: UserCreate, background_tasks: BackgroundTasks):
-    existing_user = await users_collection.find_one({"email": user.email})
-    if existing_user:
-        if existing_user.get("is_verified"):
-            raise HTTPException(status_code=400, detail="User already exists & verified!")
-        else:
-            await users_collection.delete_one({"email": user.email})
+    if await users_collection.find_one({"email": user.email}):
+        raise HTTPException(status_code=400, detail="User already exists!")
 
-    # Generate 6-digit OTP
     otp = str(random.randint(100000, 999999))
-
-    # 🌟 Developer Backdoor (Render Logs এ OTP দেখা যাবে)
-    print(f"==================================================")
-    print(f"🌟 URGENT: The OTP for {user.email} is: {otp} 🌟")
-    print(f"==================================================")
-
-    # Send email extremely fast in the background
+    print(f"OTP for {user.email} is: {otp}")
     background_tasks.add_task(send_otp_email_background, user.email, otp)
 
     hashed = get_password_hash(user.password)
@@ -152,17 +124,16 @@ async def register_user(user: UserCreate, background_tasks: BackgroundTasks):
 
     await otp_collection.delete_many({"email": user.email})
     await otp_collection.insert_one({"email": user.email, "otp": otp, "created_at": datetime.utcnow()})
-
-    return {"message": "OTP sent to your email successfully. Please verify."}
+    return {"message": "OTP processing."}
 
 
 @app.post("/verify-otp")
 async def verify_otp(data: OTPVerify):
-    record = await otp_collection.find_one({"email": data.email, "otp": data.otp})
-    if not record: raise HTTPException(status_code=400, detail="Invalid or Expired OTP!")
+    if not await otp_collection.find_one({"email": data.email, "otp": data.otp}):
+        raise HTTPException(status_code=400, detail="Invalid OTP!")
     await users_collection.update_one({"email": data.email}, {"$set": {"is_verified": True}})
     await otp_collection.delete_many({"email": data.email})
-    return {"message": "Email verified!"}
+    return {"message": "Verified!"}
 
 
 @app.post("/login", response_model=Token)
@@ -172,16 +143,10 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=401, detail="Incorrect credentials")
 
     if not user.get("is_verified", False) and user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Email not verified! Check your inbox for OTP.")
+        raise HTTPException(status_code=403, detail="Email not verified!")
 
     if user.get("is_blocked"):
-        block_time_str = user.get("block_until", "")
-        if block_time_str:
-            if datetime.now() < datetime.strptime(block_time_str, "%Y-%m-%d %H:%M"):
-                raise HTTPException(status_code=403, detail=f"Your account is BLOCKED until {block_time_str}!")
-            else:
-                await users_collection.update_one({"email": user["email"]},
-                                                  {"$set": {"is_blocked": False, "block_until": ""}})
+        raise HTTPException(status_code=403, detail="Account is BLOCKED!")
 
     access_token = create_access_token(
         data={"sub": str(user["email"]), "name": str(user.get("name", "Student")), "role": user.get("role", "student")})
@@ -196,9 +161,7 @@ async def read_users_me(token: str = Depends(oauth2_scheme)):
         raise HTTPException(status_code=401)
 
 
-# ---------------------------------------------------------
-# 📊 Admin Management APIs
-# ---------------------------------------------------------
+# --- Admin Analytics & Users ---
 @app.get("/admin/analytics", dependencies=[Depends(admin_required)])
 async def get_analytics():
     total_books = await books_collection.count_documents({})
@@ -223,22 +186,20 @@ async def get_all_users():
 async def block_user(email: str, days: int):
     block_until = (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d %H:%M")
     await users_collection.update_one({"email": email}, {"$set": {"is_blocked": True, "block_until": block_until}})
-    return {"message": "User blocked."}
+    return {"message": "Blocked"}
 
 
 @app.post("/admin/unblock-user", dependencies=[Depends(admin_required)])
 async def unblock_user(email: str):
     await users_collection.update_one({"email": email}, {"$set": {"is_blocked": False, "block_until": ""}})
-    return {"message": "User unblocked."}
+    return {"message": "Unblocked"}
 
 
-# ---------------------------------------------------------
-# 📚 Book APIs
-# ---------------------------------------------------------
+# --- Books APIs ---
 @app.post("/books/bulk-add", dependencies=[Depends(admin_required)])
 async def bulk_add_books(books: List[BookCreate]):
     if books: await books_collection.insert_many([b.dict() for b in books])
-    return {"message": "Books added"}
+    return {"message": "Added"}
 
 
 @app.get("/books")
@@ -255,12 +216,12 @@ async def get_books(search: str = None, category: str = None):
 @app.put("/books/edit/{isbn}", dependencies=[Depends(admin_required)])
 async def edit_book(isbn: str, book_data: BookCreate):
     await books_collection.update_one({"isbn": isbn}, {"$set": book_data.dict(exclude_unset=True)})
-    return {"message": "Book updated successfully!"}
+    return {"message": "Updated"}
 
 
 @app.delete("/books/delete/{isbn}", dependencies=[Depends(admin_required)])
 async def delete_book(isbn: str):
-    await books_collection.delete_one({"isbn": isbn})
+    await books_collection.delete_one({"isbn": isbn});
     return {"message": "Deleted"}
 
 
@@ -270,23 +231,20 @@ async def borrow_book(isbn: str, days: int = Query(7), token: str = Depends(oaut
     if not book or book["available_copies"] < 1: raise HTTPException(400, "Unavailable")
     await books_collection.update_one({"isbn": isbn}, {"$inc": {"available_copies": -1}})
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-
-    record = {
-        "user_email": payload.get("sub"), "book_title": book["title"], "isbn": isbn,
-        "issue_date": datetime.now().strftime("%Y-%m-%d"),
-        "return_date": (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d"),
-        "read_link": book.get("read_link", "#"), "download_link": book.get("download_link", "#"),
-        "is_premium": book.get("is_premium", False), "price": book.get("price", 0)
-    }
-    await issued_books_collection.insert_one(record)
-    return {"message": f"Borrowed for {days} days!"}
+    await issued_books_collection.insert_one(
+        {"user_email": payload.get("sub"), "book_title": book["title"], "isbn": isbn,
+         "issue_date": datetime.now().strftime("%Y-%m-%d"),
+         "return_date": (datetime.now() + timedelta(days=days)).strftime("%Y-%m-%d"),
+         "read_link": book.get("read_link", "#"), "download_link": book.get("download_link", "#"),
+         "is_premium": book.get("is_premium", False), "price": book.get("price", 0)})
+    return {"message": "Borrowed"}
 
 
 @app.post("/books/return/{isbn}")
 async def return_book(isbn: str, token: str = Depends(oauth2_scheme)):
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     record = await issued_books_collection.find_one({"user_email": payload.get("sub"), "isbn": isbn})
-    if not record: raise HTTPException(404, "No record")
+    if not record: raise HTTPException(404)
     await issued_books_collection.delete_one({"_id": record["_id"]})
     await books_collection.update_one({"isbn": isbn}, {"$inc": {"available_copies": 1}})
     return {"message": "Returned"}
@@ -313,13 +271,11 @@ async def force_return(record_id: str):
     if record:
         await issued_books_collection.delete_one({"_id": ObjectId(record_id)})
         await books_collection.update_one({"isbn": record["isbn"]}, {"$inc": {"available_copies": 1}})
-        return {"message": "Book Force Returned"}
-    raise HTTPException(404, "Not found")
+        return {"message": "Success"}
+    raise HTTPException(404)
 
 
-# ---------------------------------------------------------
-# 💬 Reviews & Comments
-# ---------------------------------------------------------
+# --- Book Reviews ---
 class ReviewModel(BaseModel): isbn: str; comment: str
 
 
@@ -327,9 +283,9 @@ class ReviewModel(BaseModel): isbn: str; comment: str
 async def add_review(review: ReviewModel, token: str = Depends(oauth2_scheme)):
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     await reviews_collection.insert_one(
-        {"isbn": review.isbn, "student_name": payload.get("name", "Student"), "comment": review.comment,
+        {"isbn": review.isbn, "student_name": payload.get("name"), "comment": review.comment,
          "date": datetime.now().strftime("%Y-%m-%d %H:%M")})
-    return {"message": "Comment added!"}
+    return {"message": "Added"}
 
 
 @app.get("/books/reviews/{isbn}")
@@ -348,13 +304,11 @@ async def get_all_reviews():
 
 @app.delete("/admin/delete-review/{review_id}", dependencies=[Depends(admin_required)])
 async def delete_review(review_id: str):
-    await reviews_collection.delete_one({"_id": ObjectId(review_id)})
-    return {"message": "Comment deleted!"}
+    await reviews_collection.delete_one({"_id": ObjectId(review_id)});
+    return {"message": "Deleted"}
 
 
-# ---------------------------------------------------------
-# 🎯 Exam Control & Quiz APIs
-# ---------------------------------------------------------
+# --- Exam Control & Quiz APIs ---
 @app.post("/admin/exam-control", dependencies=[Depends(admin_required)])
 async def toggle_exam(status: bool):
     global exam_status
@@ -365,7 +319,7 @@ async def toggle_exam(status: bool):
 @app.post("/admin/set-exam-info", dependencies=[Depends(admin_required)])
 async def set_exam_info(date_str: str, topic: str):
     global exam_status
-    exam_status["next_exam_date"] = date_str
+    exam_status["next_exam_date"] = date_str;
     exam_status["exam_topic"] = topic
     return {"message": "Updated"}
 
@@ -373,14 +327,13 @@ async def set_exam_info(date_str: str, topic: str):
 @app.post("/admin/clear-exam-info", dependencies=[Depends(admin_required)])
 async def clear_exam_info():
     global exam_status
-    exam_status["next_exam_date"] = "No Exam Scheduled"
+    exam_status["next_exam_date"] = "No Exam Scheduled";
     exam_status["exam_topic"] = "General"
     return {"message": "Cleared"}
 
 
 @app.get("/admin/exam-status")
-async def get_exam_status():
-    return exam_status
+async def get_exam_status(): return exam_status
 
 
 @app.post("/quiz/bulk-add", dependencies=[Depends(admin_required)])
@@ -398,52 +351,38 @@ async def get_all_questions():
 
 @app.delete("/quiz/delete/{q_id}", dependencies=[Depends(admin_required)])
 async def delete_question(q_id: str):
-    await questions_collection.delete_one({"_id": ObjectId(q_id)})
+    await questions_collection.delete_one({"_id": ObjectId(q_id)});
     return {"message": "Deleted"}
 
 
 @app.get("/quiz/start")
 async def start_quiz(limit: int = 5, category: str = "All"):
-    if not exam_status["is_active"]: raise HTTPException(403, "Exam is CLOSED.")
-
     pipeline = []
-    target_topic = exam_status.get("exam_topic", "General")
-
-    if target_topic and target_topic != "General":
-        pipeline.append({"$match": {"category": {"$regex": target_topic, "$options": "i"}}})
+    if exam_status["exam_topic"] != "General":
+        pipeline.append({"$match": {"category": {"$regex": exam_status["exam_topic"], "$options": "i"}}})
     elif category != "All":
         pipeline.append({"$match": {"category": {"$regex": category, "$options": "i"}}})
-
     pipeline.append({"$sample": {"size": limit}})
     q = await questions_collection.aggregate(pipeline).to_list(limit)
-
-    if len(q) == 0: return {"questions": [], "message": "No questions found!"}
     return {"questions": [{"id": str(x["_id"]), "question": x["question_text"], "options": x["options"]} for x in q]}
 
 
 @app.post("/quiz/submit")
 async def submit_quiz(answers: List[QuizSubmit], token: str = Depends(oauth2_scheme)):
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    score = 0
+    score = 0;
     res = []
-
     for a in answers:
         q = await questions_collection.find_one({"_id": ObjectId(a.question_id)})
         if q:
-            correct = (q["correct_answer"] == a.selected_answer)
-            if correct: score += 1
+            correct = (q["correct_answer"] == a.selected_answer);
+            score += 1 if correct else 0
             res.append({"question": q["question_text"], "your_answer": a.selected_answer,
                         "correct_answer": q["correct_answer"], "status": "Correct" if correct else "Wrong"})
-
     pct = (score / len(answers)) * 100 if answers else 0
-    await quiz_results_collection.insert_one({
-        "student_name": payload.get("name", "Student"),
-        "student_email": payload.get("sub"),
-        "score": score,
-        "out_of": len(answers),
-        "percentage": pct,
-        "date": datetime.now().strftime("%Y-%m-%d %H:%M")
-    })
+    await quiz_results_collection.insert_one(
+        {"student_name": payload.get("name"), "score": score, "out_of": len(answers), "percentage": pct,
+         "date": datetime.now().strftime("%Y-%m-%d %H:%M")})
     return {"total_score": score, "out_of": len(answers), "percentage": pct, "detailed_results": res}
 
 
