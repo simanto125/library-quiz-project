@@ -11,7 +11,7 @@
     <style>
         /* 🌌 Animated Gradient Background */
         body {
-            margin: 0; padding: 0; font-family: 'Poppins', sans-serif; height: 100vh; display: flex; justify_content: center; align-items: center;
+            margin: 0; padding: 0; font-family: 'Poppins', sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center;
             background: linear-gradient(-45deg, #1e3c72, #2a5298, #e73c7e, #23d5ab); background-size: 400% 400%; animation: gradientBG 15s ease infinite; overflow: hidden;
         }
         @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -45,23 +45,32 @@
         .login-link span { color: #fff; font-weight: 600; text-decoration: underline; transition: 0.3s; }
         .login-link:hover span { color: #f1c40f; }
 
-        #msg { margin-top:15px; font-size:14px; font-weight:bold; color: #fff; }
+        #msg { margin-top:15px; font-size:13px; font-weight:bold; color: #fff; }
+
+        /* ✨ OTP Section Styles (Initially Hidden) ✨ */
+        #otp-section { display: none; }
+        .otp-input { letter-spacing: 5px; font-weight: bold; font-size: 18px; text-align: center; padding: 12px 15px; }
 
         .circle { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px); z-index: 1; animation: float 6s ease-in-out infinite; }
         .circle:nth-child(1) { width: 120px; height: 120px; top: 10%; left: 10%; animation-delay: 0s; }
         .circle:nth-child(2) { width: 80px; height: 80px; bottom: 15%; right: 15%; animation-delay: 2s; }
         .circle:nth-child(3) { width: 50px; height: 50px; top: 50%; right: 10%; animation-delay: 4s; }
+
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0px); } }
     </style>
 </head>
 <body>
 
-    <div class="circle"></div><div class="circle"></div><div class="circle"></div>
+    <!-- Floating Background Elements -->
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
 
     <div class="reg-card">
         <h1 class="title-text">Join LMS Pro</h1>
-        <p class="sub-text">Create your student account instantly!</p>
+        <p class="sub-text">Start your learning journey today!</p>
 
+        <!-- 📝 Step 1: Registration Form -->
         <div id="reg-section">
             <div class="input-container">
                 <i class="fas fa-user"></i>
@@ -69,8 +78,8 @@
             </div>
 
             <div class="input-container">
-                <i class="fab fa-google"></i>
-                <input type="email" id="email" placeholder="Real Email (e.g. @gmail.com)" autocomplete="off">
+                <i class="fas fa-envelope"></i>
+                <input type="email" id="email" placeholder="Valid Email Address" autocomplete="off">
             </div>
 
             <div class="input-container">
@@ -78,14 +87,30 @@
                 <input type="password" id="password" placeholder="Create Password">
             </div>
 
-            <button onclick="handleRegister()"><i class="fas fa-user-plus"></i> Create Account</button>
+            <button onclick="handleRegister()"><i class="fas fa-paper-plane"></i> Send OTP</button>
+        </div>
+
+        <!-- 🔐 Step 2: OTP Verification Form (Hidden Initially) -->
+        <div id="otp-section">
+            <p style="color: #fff; font-size: 14px; margin-bottom: 20px;">We've sent a 6-digit code to your email. Please enter it below.</p>
+
+            <div class="input-container">
+                <i class="fas fa-key"></i>
+                <input type="text" id="otp" class="otp-input" placeholder="------" maxlength="6" autocomplete="off">
+            </div>
+
+            <button onclick="verifyOTP()"><i class="fas fa-check-circle"></i> Verify Account</button>
         </div>
 
         <p id="msg"></p>
+
         <a href="/" class="login-link">Already have an account? <span>Login Here</span></a>
     </div>
 
     <script>
+        let registeredEmail = "";
+
+        // 1. Send OTP & Create Unverified Account
         async function handleRegister() {
             const name = document.getElementById('name').value;
             const email = document.getElementById('email').value;
@@ -98,7 +123,7 @@
                 return;
             }
 
-            msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+            msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending OTP to your email...';
             msg.style.color = "#f1c40f";
 
             try {
@@ -116,15 +141,63 @@
                 const data = await res.json();
 
                 if (res.ok) {
-                    msg.innerHTML = "✅ Account Created! Redirecting to Login...";
+                    msg.innerText = "✅ OTP sent successfully! Check your inbox.";
                     msg.style.color = "#a8ff78";
-                    setTimeout(() => { window.location.href = "/"; }, 1500);
+
+                    // Save email for next step and show OTP box
+                    registeredEmail = email;
+                    setTimeout(() => {
+                        document.getElementById("reg-section").style.display = "none";
+                        document.getElementById("otp-section").style.display = "block";
+                        msg.innerText = "";
+                    }, 1500);
+
                 } else {
                     msg.innerText = "❌ " + data.detail;
                     msg.style.color = "#ffcccc";
                 }
             } catch (error) {
-                msg.innerText = "⚠️ Server Error!";
+                msg.innerText = "⚠️ Server Error or Invalid Email Configuration!";
+                msg.style.color = "#ffcccc";
+            }
+        }
+
+        // 2. Verify the OTP
+        async function verifyOTP() {
+            const otp = document.getElementById('otp').value;
+            const msg = document.getElementById('msg');
+
+            if(!otp || otp.length !== 6) {
+                msg.innerText = "⚠️ Please enter a valid 6-digit OTP.";
+                msg.style.color = "#ffcccc";
+                return;
+            }
+
+            msg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+            msg.style.color = "#f1c40f";
+
+            try {
+                const res = await fetch("/verify-otp", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        "email": registeredEmail,
+                        "otp": otp
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    msg.innerHTML = "✅ Verification Successful! Redirecting to login...";
+                    msg.style.color = "#a8ff78";
+                    setTimeout(() => { window.location.href = "/"; }, 2000);
+                } else {
+                    msg.innerText = "❌ " + data.detail;
+                    msg.style.color = "#ffcccc";
+                }
+            } catch (error) {
+                msg.innerText = "⚠️ Server Error during verification!";
                 msg.style.color = "#ffcccc";
             }
         }
