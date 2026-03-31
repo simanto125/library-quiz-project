@@ -9,3 +9,5 @@ dnspython
 pydantic
 email-validator
 aiofiles
+requests
+python-dotenv

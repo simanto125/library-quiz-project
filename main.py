@@ -13,8 +13,11 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from bson import ObjectId
 import random
-import smtplib
-from email.mime.text import MIMEText
+import requests
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # এই লাইনটি .env ফাইল থেকে তথ্যগুলো লোড করবে
 
 SECRET_KEY = "super_secret_key_for_library_project"
 ALGORITHM = "HS256"
@@ -27,38 +30,47 @@ quiz_results_collection = client.library_quiz_db.get_collection("quiz_results")
 otp_collection = client.library_quiz_db.get_collection("otps")
 reviews_collection = client.library_quiz_db.get_collection("book_reviews")
 
+# --- 🔥 Brevo Email API Configuration 🔥 ---
+# আগের লাইনটি মুছে দিন: BREVO_API_KEY = "xkeysib-..."
+# তার বদলে এই লাইনটি লিখুন:
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 SENDER_EMAIL = "simantocb17@gmail.com"
-SENDER_PASSWORD = "pxyoyjlokxvfkswb"
-
-
 def send_otp_email_background(receiver_email: str, otp: str):
+    url = "https://api.brevo.com/v3/smtp/email"
+    headers = {
+        "accept": "application/json",
+        "api-key": BREVO_API_KEY,
+        "content-type": "application/json"
+    }
+    payload = {
+        "sender": {
+            "name": "LMS Pro",
+            "email": SENDER_EMAIL
+        },
+        "to":[{"email": receiver_email}],
+        "subject": "LMS Pro - Verify Your Email",
+        "htmlContent": f"<html><body><h3>Hello!</h3><p>Your OTP for LMS Pro is: <br><br><b><span style='font-size:24px; color:#4CAF50; letter-spacing: 2px;'>{otp}</span></b><br><br></p><p>Do not share this with anyone. This OTP is valid for a short time.</p></body></html>"
+    }
     try:
-        msg = MIMEText(f"Hello!\n\nYour OTP for LMS Pro is: {otp}\n\nDo not share this with anyone.")
-        msg['Subject'] = "LMS Pro - Verify Your Email"
-        msg['From'] = f"LMS Pro <{SENDER_EMAIL}>"
-        msg['To'] = receiver_email
-        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
-        server.sendmail(SENDER_EMAIL, receiver_email, msg.as_string())
-        server.close()
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code == 201:
+            print(f"✅ SUCCESS: OTP safely sent to {receiver_email} via Brevo API")
+        else:
+            print(f"❌ API Error: {response.status_code} - {response.text}")
     except Exception as e:
-        print("Email Error:", e)
+        print("❌ Network Error:", e)
 
 
 exam_status = {"is_active": True, "next_exam_date": "No Exam Scheduled", "exam_topic": "General"}
 
-
 def verify_password(plain, hashed): return pwd_context.verify(plain, hashed)
 
-
 def get_password_hash(password): return pwd_context.hash(password)
-
 
 def create_access_token(data: dict):
     to_encode = data.copy()
     to_encode.update({"exp": datetime.utcnow() + timedelta(minutes=60)})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
 
 async def admin_required(token: str = Depends(oauth2_scheme)):
     try:
@@ -73,38 +85,35 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
-# --- 🔥 HTML Routes (TypeError FIXED for Render Latest Version) 🔥 ---
-# এই রুটগুলোতে আমি 'request=request' অ্যাড করে দিয়েছি, যাতে অনলাইনে এরর না আসে।
-# --- 🔥 HTML Routes (TypeError FIXED for ALL Versions) 🔥 ---
-# এই রুটগুলো এখন লোকাল পিসি এবং অনলাইন - দুই জায়গাতেই কাজ করবে।
-
+# --- 🔥 HTML Routes 🔥 ---
 @app.get("/", response_class=HTMLResponse)
 async def serve_login(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="login.html")
 
 @app.get("/register-page", response_class=HTMLResponse)
 async def serve_register(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="register.html")
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def serve_dashboard(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="dashboard.html")
 
 @app.get("/quiz", response_class=HTMLResponse)
 async def serve_quiz(request: Request):
-    return templates.TemplateResponse("quiz.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="quiz.html")
 
 @app.get("/profile", response_class=HTMLResponse)
 async def serve_profile(request: Request):
-    return templates.TemplateResponse("profile.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="profile.html")
 
 @app.get("/admin", response_class=HTMLResponse)
 async def serve_admin(request: Request):
-    return templates.TemplateResponse("admin.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="admin.html")
 
 @app.get("/leaderboard", response_class=HTMLResponse)
 async def serve_leaderboard(request: Request):
-    return templates.TemplateResponse("leaderboard.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="leaderboard.html")
+
 
 # ---------------------------------------------------------
 # 🔐 Auth & User APIs
@@ -179,10 +188,9 @@ async def get_analytics():
     total_books = await books_collection.count_documents({})
     total_students = await users_collection.count_documents({"role": "student"})
     total_issued = await issued_books_collection.count_documents({})
-    category_data = await books_collection.aggregate([{"$group": {"_id": "$category", "count": {"$sum": 1}}}]).to_list(
-        100)
+    category_data = await books_collection.aggregate([{"$group": {"_id": "$category", "count": {"$sum": 1}}}]).to_list(100)
     return {"stats": {"total_books": total_books, "total_students": total_students, "total_issued": total_issued},
-            "charts": {"labels": [item["_id"] for item in category_data],
+            "charts": {"labels":[item["_id"] for item in category_data],
                        "data": [item["count"] for item in category_data]}}
 
 
@@ -218,7 +226,7 @@ async def bulk_add_books(books: List[BookCreate]):
 @app.get("/books")
 async def get_books(search: str = None, category: str = None):
     query = {}
-    if search: query["$or"] = [{"title": {"$regex": search, "$options": "i"}},
+    if search: query["$or"] =[{"title": {"$regex": search, "$options": "i"}},
                                {"author": {"$regex": search, "$options": "i"}}]
     if category and category != "All": query["category"] = category
     books = await books_collection.find(query).to_list(1000)
@@ -293,7 +301,6 @@ async def force_return(record_id: str):
 # 💬 Reviews & Comments
 # ---------------------------------------------------------
 class ReviewModel(BaseModel): isbn: str; comment: str
-
 
 @app.post("/books/review")
 async def add_review(review: ReviewModel, token: str = Depends(oauth2_scheme)):
@@ -376,7 +383,7 @@ async def delete_question(q_id: str):
 @app.get("/quiz/start")
 async def start_quiz(limit: int = 5, category: str = "All"):
     if not exam_status["is_active"]: raise HTTPException(403, "Exam is CLOSED.")
-    pipeline = []
+    pipeline =[]
     target_topic = exam_status.get("exam_topic", "General")
 
     if target_topic and target_topic != "General":
@@ -387,7 +394,7 @@ async def start_quiz(limit: int = 5, category: str = "All"):
     pipeline.append({"$sample": {"size": limit}})
     q = await questions_collection.aggregate(pipeline).to_list(limit)
 
-    if len(q) == 0: return {"questions": [], "message": "No questions found!"}
+    if len(q) == 0: return {"questions":[], "message": "No questions found!"}
     return {"questions": [{"id": str(x["_id"]), "question": x["question_text"], "options": x["options"]} for x in q]}
 
 
@@ -395,7 +402,7 @@ async def start_quiz(limit: int = 5, category: str = "All"):
 async def submit_quiz(answers: List[QuizSubmit], token: str = Depends(oauth2_scheme)):
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     score = 0;
-    res = []
+    res =[]
     for a in answers:
         q = await questions_collection.find_one({"_id": ObjectId(a.question_id)})
         if q:
