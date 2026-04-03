@@ -34,7 +34,7 @@ reviews_collection = client.library_quiz_db.get_collection("book_reviews")
 # আগের লাইনটি মুছে দিন: BREVO_API_KEY = "xkeysib-..."
 # তার বদলে এই লাইনটি লিখুন:
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
-SENDER_EMAIL = "simantocb17@gmail.com"
+SENDER_EMAIL = "adminlms482@gmail.com"
 def send_otp_email_background(receiver_email: str, otp: str):
     url = "https://api.brevo.com/v3/smtp/email"
     headers = {
